@@ -133,7 +133,7 @@
             </div>
 
             <h3 class="text-lg font-semibold text-gray-300">Current Hexagons</h3>
-            <p class="text-sm text-gray-500 mt-1">From your pool below, click to select up to 7 hexagons to be used in the puzzle. Selected pieces are highlighted in green. You can click a piece again to deselect it, or click the 'X' to permanently delete it from the pool.</p>
+            <p class="text-sm text-gray-500 mt-1">From your pool below, click to select hexagons to be used in the puzzle. Selected pieces are highlighted in green. If you select more than 7, the solver will find the best arrangement using only your selected pieces. You can click a piece again to deselect it, or click the 'X' to permanently delete it from the pool.</p>
             <div id="hexagon-list" class="flex flex-wrap justify-center gap-4 p-4 bg-gray-900 rounded-lg mt-2"></div>
         </div>
         
@@ -707,27 +707,41 @@
                 const selectedValue = document.getElementById('center-piece-select').value;
                 const centerId = selectedValue === "any" ? null : parseInt(selectedValue, 10);
                 const { uniqueHexagons } = preprocessHexagons(hexagonObjects);
-
-                const tempForcedIds = new Set(selectedHexagonIds);
-                if (centerId) {
-                    // Don't add the center piece to the count of "selected from list"
-                }
-
-                const remainingPool = uniqueHexagons.filter(h => !selectedHexagonIds.has(h.id) && h.id !== centerId);
+                
+                const selectedCount = selectedHexagonIds.size;
                 const slotsToFill = centerId ? 6 : 7;
-                const requiredCount = selectedHexagonIds.size;
-                const wildcardSlots = slotsToFill - requiredCount;
 
-                if (wildcardSlots < 0) {
-                    estimationEl.textContent = "Error: Too many hexagons selected.";
-                    solveBtn.disabled = true;
-                    return;
+                let pieceCount, numToChoose;
+
+                if (selectedCount > 7) {
+                    // New logic: Search is restricted to only the selected hexagons
+                    const selectedPool = uniqueHexagons.filter(h => selectedHexagonIds.has(h.id) && h.id !== centerId);
+                    pieceCount = selectedPool.length;
+                    numToChoose = Math.min(slotsToFill, pieceCount);
+                    
+                    if (pieceCount < slotsToFill) {
+                         estimationEl.textContent = `Error: Not enough selected pieces to fill the grid. Need ${slotsToFill}, have ${pieceCount}.`;
+                         solveBtn.disabled = true;
+                         return;
+                    }
+
+                } else {
+                    // Original logic: Use selected as forced, fill from the rest
+                    const remainingPool = uniqueHexagons.filter(h => !selectedHexagonIds.has(h.id) && h.id !== centerId);
+                    const requiredCount = selectedHexagonIds.size;
+                    const wildcardSlots = slotsToFill - requiredCount;
+                    
+                    if (wildcardSlots < 0) { // Should not happen with the new logic, but as a safeguard
+                        estimationEl.textContent = "Error: Too many hexagons selected.";
+                        solveBtn.disabled = true;
+                        return;
+                    }
+                    
+                    pieceCount = remainingPool.length;
+                    numToChoose = Math.min(wildcardSlots, pieceCount);
                 }
+
                 solveBtn.disabled = false;
-                
-                const numToChoose = Math.min(wildcardSlots, remainingPool.length);
-                const pieceCount = remainingPool.length;
-                
                 const totalSecondsStr = estimateTime(pieceCount, numToChoose);
                 estimationEl.textContent = `Estimated time: ${formatSeconds(totalSecondsStr)}`;
             }
@@ -858,16 +872,11 @@
 
                     canvas.addEventListener('click', () => {
                         const centerId = selectEl.value === "any" ? null : parseInt(selectEl.value, 10);
-                        const limit = centerId ? 6 : 7;
 
                         if (selectedHexagonIds.has(hex.id)) {
                             selectedHexagonIds.delete(hex.id);
                             hexContainer.classList.remove('selected');
                         } else {
-                            if (selectedHexagonIds.size >= limit) {
-                                alert(`You can only select up to ${limit} shapes.`);
-                                return;
-                            }
                             if (hex.id === centerId) {
                                 alert("This hexagon is already selected as the center piece.");
                                 return;
@@ -907,19 +916,10 @@
             selectEl.addEventListener('change', () => {
                 updateEstimationText();
                 const centerId = selectEl.value === "any" ? null : parseInt(selectEl.value, 10);
-                const limit = centerId ? 6 : 7;
 
                 if (selectedHexagonIds.has(centerId)) {
                     selectedHexagonIds.delete(centerId);
                     updateHexagonList();
-                } else if (selectedHexagonIds.size > limit) {
-                    const lastSelectedId = Array.from(selectedHexagonIds).pop();
-                    selectedHexagonIds.delete(lastSelectedId);
-                    updateHexagonList();
-                }
-
-                if (selectedHexagonIds.size > limit) {
-                    alert(`Selection limit is now ${limit}. You have ${selectedHexagonIds.size} selected. Please deselect some.`);
                 }
             });
 
@@ -1117,12 +1117,21 @@
                 const searchMode = document.querySelector('input[name="search-mode"]:checked').value;
 
                 const { uniqueHexagons, sidePatternGroups } = preprocessHexagons(hexagonObjects);
-                const estimationText1 = document.getElementById('estimation-text1');
-                const forcedIds = new Set(selectedHexagonIds);
 
+                let pool = uniqueHexagons;
+                const forcedIds = new Set();
+
+                if (selectedHexagonIds.size > 7) {
+                    pool = uniqueHexagons.filter(h => selectedHexagonIds.has(h.id));
+                } else {
+                    selectedHexagonIds.forEach(id => forcedIds.add(id));
+                }
+
+                const estimationText1 = document.getElementById('estimation-text1');
+                
                 const totalSecondsStr = estimationText1.textContent.replace('Estimated time: ', '');
                 
-                const { score, arrangements: baseArrangements } = await findAllBestArrangements(uniqueHexagons, centerId, searchMode, (progress, count, total) => {
+                const { score, arrangements: baseArrangements } = await findAllBestArrangements(pool, centerId, searchMode, (progress, count, total) => {
                     progressBar.style.width = `${progress * 100}%`;
                     const remainingSecondsStr = multiplyBigInt(totalSecondsStr, Math.round((1 - progress) * 100));
                     const finalSecondsStr = divideBigInt(remainingSecondsStr, 100).quotient;
