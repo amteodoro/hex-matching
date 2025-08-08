@@ -915,12 +915,6 @@
             addRandomShapeBtn.addEventListener('click', addRandomHexagon);
             selectEl.addEventListener('change', () => {
                 updateEstimationText();
-                const centerId = selectEl.value === "any" ? null : parseInt(selectEl.value, 10);
-
-                if (selectedHexagonIds.has(centerId)) {
-                    selectedHexagonIds.delete(centerId);
-                    updateHexagonList();
-                }
             });
 
             const colors = ['red', 'blue', 'purple', 'gray', 'yellow'];
@@ -1123,6 +1117,15 @@
 
                 if (selectedHexagonIds.size > 7) {
                     pool = uniqueHexagons.filter(h => selectedHexagonIds.has(h.id));
+                    if (centerId) {
+                        const centerHexInPool = pool.find(h => h.id === centerId);
+                        if (!centerHexInPool) {
+                            const centerHex = uniqueHexagons.find(h => h.id === centerId);
+                            if (centerHex) {
+                                pool.push(centerHex);
+                            }
+                        }
+                    }
                 } else {
                     selectedHexagonIds.forEach(id => forcedIds.add(id));
                 }
