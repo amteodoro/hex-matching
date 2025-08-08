@@ -82,6 +82,15 @@
             border-color: #34d399; /* green-400 */
             box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
         }
+        #hexagon-list .hex-container canvas {
+            transition: all 0.2s ease-in-out;
+        }
+        #hexagon-list .hex-container.selected canvas {
+            border-color: #34d399; /* green-400 */
+            box-shadow: 0 0 15px rgba(52, 211, 153, 0.8);
+            border-width: 4px;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -96,6 +105,7 @@
             <!-- Add Shape Form -->
             <div id="add-shape-form" class="my-4 p-4 border border-gray-600 rounded-lg">
                 <h3 class="text-lg font-semibold text-gray-300 mb-2">Add a New Hexagon</h3>
+                <p class="text-sm text-gray-500 mt-1 mb-4">Define the properties of a hexagon piece and add it to your pool. You can also add random pieces for quick testing.</p>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label for="new-hex-id" class="block text-sm font-medium text-gray-400">ID</label>
@@ -122,7 +132,8 @@
                 <button id="add-random-shape-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md mt-4">Add Random Shape</button>
             </div>
 
-            <h3 class="text-lg font-semibold text-gray-300">Current Hexagons:</h3>
+            <h3 class="text-lg font-semibold text-gray-300">Current Hexagons</h3>
+            <p class="text-sm text-gray-500 mt-1">From your pool below, click to select up to 7 hexagons to be used in the puzzle. Selected pieces are highlighted in green. You can click a piece again to deselect it, or click the 'X' to permanently delete it from the pool.</p>
             <div id="hexagon-list" class="flex flex-wrap justify-center gap-4 p-4 bg-gray-900 rounded-lg mt-2"></div>
         </div>
         
@@ -131,6 +142,7 @@
                 <label for="center-piece-select" class="mr-2 text-gray-400">Center Piece (M2):</label>
                 <select id="center-piece-select" class="bg-gray-700 border border-gray-600 text-white rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                 </select>
+                <p class="text-sm text-gray-500 mt-1">Optionally, lock a specific piece in the center position (M2) to speed up the search.</p>
             </div>
             <div class="control-group flex items-center gap-4">
                 <span class="text-gray-400">Search Mode:</span>
@@ -139,6 +151,7 @@
             </div>
             <fieldset id="tiebreak-fieldset" class="control-group" disabled>
                 <span class="text-gray-400">Tie-Breaking Strategy:</span>
+                <p class="text-sm text-gray-500 mt-1">When multiple layouts share the same top score, this determines how they are sorted. You can prioritize by the total rarity of pieces, the number of matches of a specific color, or the number of pieces of a specific element.</p>
                 <div class="flex items-center justify-center gap-4 mt-2">
                     <label class="flex items-center"><input type="radio" name="tiebreak-mode" value="rarity" checked class="form-radio h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500"> <span class="ml-2">Rarity</span></label>
                     <label class="flex items-center"><input type="radio" name="tiebreak-mode" value="color" class="form-radio h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500"> <span class="ml-2">Color Priority</span></label>
@@ -152,6 +165,7 @@
                 </div>
             </fieldset>
             <button id="solve-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Solve</button>
+            <p class="text-sm text-gray-500 mt-1">This will start the search for the best arrangement using the selected hexagons.</p>
         </div>
 
         <div id="progress-container" class="w-full bg-gray-600 rounded-full h-2.5 mt-4" style="display: none;">
@@ -159,6 +173,7 @@
         </div>
         <div id="progress-text" class="text-sm text-gray-400 mt-1"></div>
         <div id="estimation-text1" class="text-sm text-gray-400 mt-1"></div>
+        <p class="text-xs text-yellow-400 mt-1">Note: The time estimation may be inaccurate for very large numbers of hexagons.</p>
         
         <div id="score"></div>
         <div id="results-summary1" class="results-summary"></div>
@@ -168,6 +183,7 @@
         <div id="grid1-pagination" class="flex justify-center items-center mt-4"></div>
         <div class="my-4">
             <button id="solve-second-grid-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md" style="display: none;" disabled>Solve Second Grid</button>
+            <p id="solve-second-grid-hint" class="text-sm text-gray-500 mt-1" style="display: none;">After finding the first grid, select one of the resulting layouts above, then click here to find the best arrangement for a second grid using the remaining pieces.</p>
         </div>
 
         <div id="second-grid-container" class="mt-8 border-t border-gray-700 pt-8" style="display: none;">
@@ -200,38 +216,6 @@
                 this.rarity = rarity;
                 this.sides = sides;
                 this.element = element;
-            }
-        }
-
-        function* permutations(arr, k) {
-            if (k > arr.length || k === 0) return;
-            const indices = Array.from({ length: arr.length }, (_, i) => i);
-            const cycles = Array.from({ length: k }, (_, i) => arr.length - i);
-            yield arr.slice(0, k);
-            while (true) {
-                let i = k - 1;
-                while (i >= 0) {
-                    cycles[i]--;
-                    if (cycles[i] === 0) {
-                        const first = indices[i];
-                        for (let j = i; j < arr.length - 1; j++) {
-                            indices[j] = indices[j + 1];
-                        }
-                        indices[arr.length - 1] = first;
-                        cycles[i] = arr.length - i;
-                    } else {
-                        const j = cycles[i];
-                        [indices[i], indices[arr.length - j]] = [indices[arr.length - j], indices[i]];
-                        const result = [];
-                        for (let m = 0; m < k; m++) {
-                            result.push(arr[indices[m]]);
-                        }
-                        yield result;
-                        break;
-                    }
-                    i--;
-                }
-                if (i < 0) break;
             }
         }
 
@@ -349,11 +333,11 @@
             return { score, colorCounts, elementCounts };
         }
 
-        async function findAllBestArrangements(hexagons, centerId, searchMode, onProgress) {
+        async function findAllBestArrangements(hexagons, centerId, searchMode, onProgress, forcedHexagonIds = new Set()) {
             let bestScore = -1;
             let bestArrangements = [];
-            let processedCount = 0; // Counts fully evaluated arrangements
-            const CHUNK_SIZE = 50000; // Number of states to process before yielding to UI thread
+            let processedCount = 0;
+            const CHUNK_SIZE = 50000;
 
             const centerHex = centerId ? hexagons.find(h => h.id === centerId) : null;
             
@@ -364,12 +348,10 @@
             let candidatePieces = hexagons.slice();
             const totalSlots = slots.length;
 
-            // If we have fewer pieces than slots, add dummy pieces to represent empty spaces
             if (candidatePieces.length < totalSlots) {
                 const dummyHex = new Hexagon(0, 'empty', 'none', Array(6).fill('none'), 'none');
                 const dummiesNeeded = totalSlots - candidatePieces.length;
                 for (let i = 0; i < dummiesNeeded; i++) {
-                    // Ensure dummy IDs are unique to avoid conflicts
                     candidatePieces.push({ ...dummyHex, id: `dummy-${i}`});
                 }
             }
@@ -381,14 +363,17 @@
                 const arrangement = {};
                 const usedHexIds = new Set();
                 const usedLabels = new Set();
+                const placedForcedHexIds = new Set();
 
                 if (centerHex) {
                     arrangement['M2'] = centerHex;
                     usedHexIds.add(centerHex.id);
                     usedLabels.add(centerHex.label);
+                    if (forcedHexagonIds.has(centerHex.id)) {
+                        placedForcedHexIds.add(centerHex.id);
+                    }
                 }
 
-                // Start search at the first slot, with the first piece
                 stack.push({ slotIndex: 0, pieceIndex: 0 });
 
                 async function processStack() {
@@ -397,7 +382,7 @@
                     while (stack.length > 0) {
                         if (++operationsSinceYield > CHUNK_SIZE) {
                             const progress = stack.length > 0 ? stack[0].pieceIndex / totalForProgress : 1;
-                            onProgress(progress, processedCount, 0); // Pass 0 for unknown total
+                            onProgress(progress, processedCount, 0);
                             setTimeout(processStack, 0);
                             return;
                         }
@@ -406,7 +391,6 @@
                         const slotIndex = currentState.slotIndex;
                         const pieceIndex = currentState.pieceIndex;
 
-                        // Backtrack if we've exhausted pieces for the current slot
                         if (pieceIndex >= candidatePieces.length) {
                             stack.pop();
                             if (stack.length > 0) {
@@ -417,6 +401,9 @@
                                 if(pieceToRemove) {
                                     usedHexIds.delete(pieceToRemove.id);
                                     usedLabels.delete(pieceToRemove.label);
+                                    if (forcedHexagonIds.has(pieceToRemove.id)) {
+                                        placedForcedHexIds.delete(pieceToRemove.id);
+                                    }
                                     delete arrangement[previousSlot];
                                 }
                             }
@@ -424,32 +411,46 @@
                         }
 
                         const piece = candidatePieces[pieceIndex];
-                        currentState.pieceIndex++; // Schedule next piece for this slot
+                        currentState.pieceIndex++;
 
                         if (usedHexIds.has(piece.id) || (piece.label !== 'empty' && usedLabels.has(piece.label))) {
-                            continue; // This piece cannot be used, try the next one
+                            continue;
+                        }
+                        
+                        if (!forcedHexagonIds.has(piece.id)) {
+                            const remainingSlotsAfterThis = slots.length - (slotIndex + 1);
+                            const unplacedForcedCount = forcedHexagonIds.size - placedForcedHexIds.size;
+                            if (remainingSlotsAfterThis < unplacedForcedCount) {
+                                continue; 
+                            }
                         }
                         
                         const slot = slots[slotIndex];
                         arrangement[slot] = piece;
                         usedHexIds.add(piece.id);
                         usedLabels.add(piece.label);
+                        if (forcedHexagonIds.has(piece.id)) {
+                            placedForcedHexIds.add(piece.id);
+                        }
 
                         if (slotIndex === slots.length - 1) {
-                            // Arrangement complete, process it
-                            processedCount++;
-                            const { score, colorCounts, elementCounts } = calculateArrangementScore(arrangement);
+                            if (placedForcedHexIds.size === forcedHexagonIds.size) {
+                                processedCount++;
+                                const { score, colorCounts, elementCounts } = calculateArrangementScore(arrangement);
 
-                            if (score > bestScore) {
-                                bestScore = score;
-                                bestArrangements = [{ arrangement: { ...arrangement }, colorCounts, elementCounts }];
-                            } else if (score === bestScore && bestScore !== -1) {
-                                bestArrangements.push({ arrangement: { ...arrangement }, colorCounts, elementCounts });
+                                if (score > bestScore) {
+                                    bestScore = score;
+                                    bestArrangements = [{ arrangement: { ...arrangement }, colorCounts, elementCounts }];
+                                } else if (score === bestScore && bestScore !== -1) {
+                                    bestArrangements.push({ arrangement: { ...arrangement }, colorCounts, elementCounts });
+                                }
                             }
                             
-                            // Backtrack from this leaf node
                             usedHexIds.delete(piece.id);
                             usedLabels.delete(piece.label);
+                            if (forcedHexagonIds.has(piece.id)) {
+                                placedForcedHexIds.delete(piece.id);
+                            }
                             delete arrangement[slot];
 
                             if (searchMode === 'stopAt12' && bestScore === 12) {
@@ -458,12 +459,10 @@
                                 return;
                             }
                         } else {
-                            // Go deeper
                             stack.push({ slotIndex: slotIndex + 1, pieceIndex: 0 });
                         }
                     }
                     
-                    // Finished
                     onProgress(1, processedCount, processedCount);
                     resolve({ score: bestScore, arrangements: bestArrangements });
                 }
@@ -683,9 +682,23 @@
             let allBestLayoutsGrid1 = [];
             let allBestLayoutsGrid2 = [];
             let hexagonObjects = [];
+            let selectedHexagonIds = new Set();
             let currentPageGrid1 = 1;
             let currentPageGrid2 = 1;
             const LAYOUTS_PER_PAGE = 9;
+
+            function saveHexagonsToStorage() {
+                localStorage.setItem('hexagonPool', JSON.stringify(hexagonObjects));
+            }
+
+            function loadHexagonsFromStorage() {
+                const savedHexagons = localStorage.getItem('hexagonPool');
+                if (savedHexagons) {
+                    const parsedHexagons = JSON.parse(savedHexagons);
+                    return parsedHexagons.map(h => new Hexagon(h.id, h.label, h.rarity, h.sides, h.element));
+                }
+                return [];
+            }
 
             function updateEstimationText() {
                 const estimationEl = document.getElementById('estimation-text1');
@@ -693,26 +706,35 @@
 
                 const selectedValue = document.getElementById('center-piece-select').value;
                 const centerId = selectedValue === "any" ? null : parseInt(selectedValue, 10);
-
                 const { uniqueHexagons } = preprocessHexagons(hexagonObjects);
-                const slotsToFill = centerId ? 6 : 7;
-                const numToChoose = Math.min(slotsToFill, uniqueHexagons.length);
 
-                const totalSecondsStr = estimateTime(uniqueHexagons.length, numToChoose);
+                const tempForcedIds = new Set(selectedHexagonIds);
+                if (centerId) {
+                    // Don't add the center piece to the count of "selected from list"
+                }
+
+                const remainingPool = uniqueHexagons.filter(h => !selectedHexagonIds.has(h.id) && h.id !== centerId);
+                const slotsToFill = centerId ? 6 : 7;
+                const requiredCount = selectedHexagonIds.size;
+                const wildcardSlots = slotsToFill - requiredCount;
+
+                if (wildcardSlots < 0) {
+                    estimationEl.textContent = "Error: Too many hexagons selected.";
+                    solveBtn.disabled = true;
+                    return;
+                }
+                solveBtn.disabled = false;
+                
+                const numToChoose = Math.min(wildcardSlots, remainingPool.length);
+                const pieceCount = remainingPool.length;
+                
+                const totalSecondsStr = estimateTime(pieceCount, numToChoose);
                 estimationEl.textContent = `Estimated time: ${formatSeconds(totalSecondsStr)}`;
             }
 
             function setupInitialData() {
-                const shapesData = [
-                    // { "id": 1, "label": "chick_admiral", "rarity": "legendary", "sides": ["yellow", "yellow", "gray", "red", "yellow", "purple"], "element": "light" },
-                    // { "id": 2, "label": "manok", "rarity": "legendary", "sides": ["purple", "red", "red", "gray", "purple", "gray"], "element": "fire" },
-                    // { "id": 3, "label": "pierot", "rarity": "legendary", "sides": ["yellow", "blue", "red", "purple", "purple", "gray"], "element": "dark" },
-                    // { "id": 4, "label": "crepe_cat", "rarity": "legendary", "sides": ["yellow", "purple", "yellow", "purple", "yellow", "gray"], "element": "electric" },
-                    // { "id": 5, "label": "otakun", "rarity": "legendary", "sides": ["purple", "red", "red", "red", "gray", "gray"], "element": "fire" },
-                    // { "id": 6, "label": "dollmaker_mari", "rarity": "legendary", "sides": ["blue", "purple", "blue", "yellow", "gray", "yellow"], "element": "water" },
-                    // { "id": 7, "label": "victorious_blackcat", "rarity": "legendary", "sides": ["yellow", "gray", "yellow", "blue", "red", "blue"], "element": "normal" },
-                ];
-                hexagonObjects = shapesData.map(d => new Hexagon(d.id, d.label, d.rarity, d.sides, d.element));
+                hexagonObjects = loadHexagonsFromStorage();
+                selectedHexagonIds.clear();
                 populateDropdowns();
                 updateHexagonList();
                 populateAddShapeForm();
@@ -726,18 +748,18 @@
                 const element = document.getElementById('new-hex-element').value;
                 const sides = Array.from(document.querySelectorAll('#new-hex-sides select')).map(s => s.value);
 
-                if (!label || !rarity) { // ID is now auto-generated
+                if (!label || !rarity) {
                     alert('Please fill all fields for the new hexagon.');
                     return;
                 }
 
                 const newHex = new Hexagon(id, label, rarity, sides, element);
                 hexagonObjects.push(newHex);
+                saveHexagonsToStorage();
                 populateDropdowns();
                 updateHexagonList();
                 updateEstimationText();
                 
-                // Reset form for next entry
                 document.getElementById('new-hex-label').value = '';
                 document.getElementById('new-hex-id').value = getNextId();
             }
@@ -800,7 +822,8 @@
             }
 
             function populateDropdowns() {
-                selectEl.innerHTML = ''; // Clear existing options
+                const selectedVal = selectEl.value;
+                selectEl.innerHTML = '';
                 const anyOption = document.createElement('option');
                 anyOption.value = "any";
                 anyOption.textContent = "Any (Brute Force All)";
@@ -812,25 +835,52 @@
                     option.textContent = `${hex.label} (ID: ${hex.id})`;
                     selectEl.appendChild(option);
                 });
+                selectEl.value = selectedVal;
             }
 
             function updateHexagonList() {
                 hexagonList.innerHTML = '';
                 hexagonObjects.forEach(hex => {
                     const hexContainer = document.createElement('div');
-                    hexContainer.className = 'relative';
+                    hexContainer.className = 'relative hex-container';
+                    if (selectedHexagonIds.has(hex.id)) {
+                        hexContainer.classList.add('selected');
+                    }
+                    hexContainer.dataset.hexId = hex.id;
 
                     const canvas = document.createElement('canvas');
                     canvas.width = 140;
                     canvas.height = 140;
-                    canvas.className = 'rounded-lg border-2';
+                    canvas.className = 'rounded-lg border-2 cursor-pointer';
                     canvas.style.borderColor = rarityColor[hex.rarity] || '#374151';
                     const ctx = canvas.getContext('2d');
                     drawHexagon(ctx, 70, 70, 50, hex);
 
+                    canvas.addEventListener('click', () => {
+                        const centerId = selectEl.value === "any" ? null : parseInt(selectEl.value, 10);
+                        const limit = centerId ? 6 : 7;
+
+                        if (selectedHexagonIds.has(hex.id)) {
+                            selectedHexagonIds.delete(hex.id);
+                            hexContainer.classList.remove('selected');
+                        } else {
+                            if (selectedHexagonIds.size >= limit) {
+                                alert(`You can only select up to ${limit} shapes.`);
+                                return;
+                            }
+                            if (hex.id === centerId) {
+                                alert("This hexagon is already selected as the center piece.");
+                                return;
+                            }
+                            selectedHexagonIds.add(hex.id);
+                            hexContainer.classList.add('selected');
+                        }
+                        updateEstimationText();
+                    });
+
                     const deleteBtn = document.createElement('button');
                     deleteBtn.textContent = 'X';
-                    deleteBtn.className = 'absolute top-0 right-0 bg-red-600 hover:bg-red-700 text-white font-bold w-6 h-6 rounded-full flex items-center justify-center text-xs';
+                    deleteBtn.className = 'absolute top-0 right-0 bg-red-600 hover:bg-red-700 text-white font-bold w-6 h-6 rounded-full flex items-center justify-center text-xs z-10';
                     deleteBtn.onclick = () => deleteHexagon(hex.id);
                     
                     hexContainer.appendChild(canvas);
@@ -840,9 +890,11 @@
             }
 
             function deleteHexagon(id) {
+                selectedHexagonIds.delete(id);
                 const index = hexagonObjects.findIndex(h => h.id === id);
                 if (index > -1) {
                     hexagonObjects.splice(index, 1);
+                    saveHexagonsToStorage();
                     updateHexagonList();
                     populateDropdowns();
                     document.getElementById('new-hex-id').value = getNextId();
@@ -852,21 +904,25 @@
 
             addShapeBtn.addEventListener('click', addHexagon);
             addRandomShapeBtn.addEventListener('click', addRandomHexagon);
-            selectEl.addEventListener('change', updateEstimationText);
+            selectEl.addEventListener('change', () => {
+                updateEstimationText();
+                const centerId = selectEl.value === "any" ? null : parseInt(selectEl.value, 10);
+                const limit = centerId ? 6 : 7;
 
-            // Populate Dropdowns
-            const anyOption = document.createElement('option');
-            anyOption.value = "any";
-            anyOption.textContent = "Any (Brute Force All)";
-            selectEl.appendChild(anyOption);
-            hexagonObjects.sort((a, b) => (rarityValue[b.rarity] || 0) - (rarityValue[a.rarity] || 0) || a.label.localeCompare(b.label))
-                          .forEach(hex => {
-                const option = document.createElement('option');
-                option.value = hex.id;
-                option.textContent = `${hex.label} (ID: ${hex.id})`;
-                selectEl.appendChild(option);
+                if (selectedHexagonIds.has(centerId)) {
+                    selectedHexagonIds.delete(centerId);
+                    updateHexagonList();
+                } else if (selectedHexagonIds.size > limit) {
+                    const lastSelectedId = Array.from(selectedHexagonIds).pop();
+                    selectedHexagonIds.delete(lastSelectedId);
+                    updateHexagonList();
+                }
+
+                if (selectedHexagonIds.size > limit) {
+                    alert(`Selection limit is now ${limit}. You have ${selectedHexagonIds.size} selected. Please deselect some.`);
+                }
             });
-            
+
             const colors = ['red', 'blue', 'purple', 'gray', 'yellow'];
             for(let i = 1; i <= 3; i++) {
                 const prioritySelect = document.createElement('select');
@@ -908,7 +964,7 @@
 
                 const gridLayoutContainer = document.getElementById(`grid${gridNum}-layouts`);
                 const paginationContainer = document.getElementById(`grid${gridNum}-pagination`);
-                gridLayoutContainer.innerHTML = ''; // Clear previous results
+                gridLayoutContainer.innerHTML = '';
                 paginationContainer.innerHTML = '';
 
                 const tiebreakMode = document.querySelector('input[name="tiebreak-mode"]:checked').value;
@@ -1003,7 +1059,6 @@
                         return button;
                     };
 
-                    // Previous Arrow
                     const prevButton = createButton('&larr;', page - 1, page === 1);
                     prevButton.classList.add('rounded-l-md');
                     paginationContainer.appendChild(prevButton);
@@ -1015,35 +1070,18 @@
                         }
                     } else {
                         pagesToShow.push(1);
-                        if (page > 3) {
-                            pagesToShow.push('...');
-                        }
-                        if (page > 2) {
-                            pagesToShow.push(page - 1);
-                        }
-                        if (page !== 1 && page !== totalPages) {
-                            pagesToShow.push(page);
-                        }
-                        if (page < totalPages - 1) {
-                            pagesToShow.push(page + 1);
-                        }
-                        if (page < totalPages - 2) {
-                            pagesToShow.push('...');
-                        }
+                        if (page > 3) pagesToShow.push('...');
+                        if (page > 2) pagesToShow.push(page - 1);
+                        if (page !== 1 && page !== totalPages) pagesToShow.push(page);
+                        if (page < totalPages - 1) pagesToShow.push(page + 1);
+                        if (page < totalPages - 2) pagesToShow.push('...');
                         pagesToShow.push(totalPages);
                     }
                     
-                    const uniquePages = [...new Set(pagesToShow)];
-
-                    uniquePages.forEach(p => {
-                        if (p === '...') {
-                            paginationContainer.appendChild(createButton('...', 0, false, false, true));
-                        } else {
-                            paginationContainer.appendChild(createButton(p, p, false, p === page));
-                        }
+                    [...new Set(pagesToShow)].forEach(p => {
+                        paginationContainer.appendChild(p === '...' ? createButton('...', 0, false, false, true) : createButton(p, p, false, p === page));
                     });
                     
-                    // Next Arrow
                     const nextButton = createButton('&rarr;', page + 1, page === totalPages);
                     nextButton.classList.add('rounded-r-md');
                     paginationContainer.appendChild(nextButton);
@@ -1080,9 +1118,9 @@
 
                 const { uniqueHexagons, sidePatternGroups } = preprocessHexagons(hexagonObjects);
                 const estimationText1 = document.getElementById('estimation-text1');
+                const forcedIds = new Set(selectedHexagonIds);
 
-                const numToChoose = centerId ? Math.min(6, uniqueHexagons.length) : Math.min(7, uniqueHexagons.length);
-                const totalSecondsStr = estimateTime(uniqueHexagons.length, numToChoose);
+                const totalSecondsStr = estimationText1.textContent.replace('Estimated time: ', '');
                 
                 const { score, arrangements: baseArrangements } = await findAllBestArrangements(uniqueHexagons, centerId, searchMode, (progress, count, total) => {
                     progressBar.style.width = `${progress * 100}%`;
@@ -1093,7 +1131,7 @@
                     progressText.textContent = total > 0 
                         ? `Checked ${count.toLocaleString()} / ${total.toLocaleString()} permutations...`
                         : `Evaluated ${count.toLocaleString()} arrangements...`;
-                });
+                }, forcedIds);
                 
                 const arrangements = expandArrangements(baseArrangements, sidePatternGroups);
                 allBestLayoutsGrid1 = arrangements;
@@ -1101,12 +1139,13 @@
                 progressText.textContent = '';
                 scoreEl.textContent = `Maximum Matching Sides: ${score}`;
                 resultsSummary1.textContent = `Found ${arrangements.length} layout(s) with this score.`;
-                updateEstimationText(); // Reset estimation text
+                updateEstimationText();
                 
                 if (arrangements.length > 0) {
                     document.getElementById('grid1-title').style.display = 'block';
                     updateDisplay(1, allBestLayoutsGrid1, 1);
                     document.getElementById('solve-second-grid-button').style.display = 'inline-block';
+                    document.getElementById('solve-second-grid-hint').style.display = 'block';
                 } else {
                     scoreEl.textContent += ' - No arrangements found.';
                 }
@@ -1132,7 +1171,8 @@
                 document.getElementById('grid2-pagination').innerHTML = '';
 
                 const selectedLayoutIndex = parseInt(selectedLayoutElement.dataset.layoutIndex, 10);
-                const selectedLayout = allBestLayoutsGrid1[selectedLayoutIndex];
+                const sortedLayouts = applyTieBreaking(allBestLayoutsGrid1, document.querySelector('input[name="tiebreak-mode"]:checked').value);
+                const selectedLayout = sortedLayouts[selectedLayoutIndex];
                 const usedIds = new Set(Object.values(selectedLayout.arrangement).map(hex => hex.id));
                 const remainingHexagons = hexagonObjects.filter(hex => !usedIds.has(hex.id));
                 const searchMode = document.querySelector('input[name="search-mode"]:checked').value;
