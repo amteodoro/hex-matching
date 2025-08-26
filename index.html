@@ -13,83 +13,245 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hexagon Puzzle Solver</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Color palette for retro theme */
+        :root {
+            --bg: #1a1a2e;
+            --panel: #2c2c54;
+            --panel-alt: #323266;
+            --text: #e0e0e0;
+            --muted: #a0a3b1;
+            --accent: #9370db;
+            --accent-2: #a380eb;
+            --highlight: #fca311;
+            --danger: #e74c3c;
+            --danger-d: #c0392b;
+            --success: #22c55e;
+            --outline: #000000;
+            --glow: rgba(147,112,219,0.45);
+        }
+        
+        /* Base styles */
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Press Start 2P', cursive;
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            background-color: #111827; /* bg-gray-900 */
-            color: #f3f4f6; /* text-gray-200 */
+            background-color: var(--bg);
+            color: var(--text);
             margin: 0;
             padding: 2rem 0;
+            line-height: 1.45;
         }
         .container {
             text-align: center;
-            background-color: #1f2937; /* bg-gray-800 */
+            background-color: var(--panel);
             padding: 2rem;
             border-radius: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.35);
             width: 95%;
             max-width: 1400px;
         }
         canvas {
-            background-color: #374151; /* bg-gray-700 */
+            background-color: var(--panel-alt);
             border-radius: 0.75rem;
             margin-top: 1.5rem;
+            border: 2px solid var(--accent);
         }
         h1 {
-            font-size: 2.25rem;
-            font-weight: 600;
-            color: #34d399; /* text-green-400 */
+            font-size: 2rem;
+            font-weight: 400;
+            color: var(--highlight);
+            text-shadow: 3px 3px var(--outline);
+            letter-spacing: 0.5px;
+        }
+        h2 {
+            font-size: 1.25rem;
+            color: var(--highlight);
+            text-shadow: 2px 2px var(--outline);
+            margin-top: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        h3 {
+            font-size: 0.9rem;
+            color: #b7a6eb;
+            text-shadow: 1px 1px var(--outline);
+            margin-bottom: 0.25rem;
         }
         p {
-            font-size: 1.125rem;
-            color: #9ca3af; /* text-gray-400 */
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+        label {
+            font-size: 0.75rem;
         }
         #score, #score2 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #34d399; /* text-green-400 */
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--highlight);
             margin-top: 1rem;
-            min-height: 2.25rem; /* Reserve space to prevent layout shift */
+            min-height: 2.25rem;
         }
-        select, button {
-            transition: all 0.2s ease-in-out;
+        #grid1-title {
+            color: var(--highlight);
+            text-shadow: 2px 2px var(--outline);
+        }
+        
+        /* Pixelated border style */
+        .pixelated-border, 
+        #data-management,
+        #second-grid-container,
+        #grid1-layouts .layout-container,
+        #grid2-layouts .layout-container,
+        #hexagon-list {
+            border-style: solid;
+            border-width: 4px;
+            border-image-slice: 2;
+            border-image-width: 2;
+            border-image-repeat: stretch;
+            border-image-source: url('data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="6" height="6"><g fill="%239370db"><path d="M0,0 H2 V2 H0z M2,2 H4 V4 H2z M4,4 H6 V6 H4z"/></g></svg>');
+            border-image-outset: 2;
+            padding: 1rem;
+            background-clip: padding-box;
+        }
+        
+        /* Card backgrounds */
+        #grid1-layouts .layout-container,
+        #grid2-layouts .layout-container,
+        #hexagon-list {
+            background-color: var(--panel-alt);
+        }
+        
+        /* Form controls */
+        select, input[type="text"], input[type="number"] {
+            background-color: var(--panel-alt);
+            border: 2px solid var(--accent);
+            color: var(--text);
+            padding: 8px 10px;
+            border-radius: 0;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7rem;
+            image-rendering: pixelated;
+        }
+        select:focus, input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--glow);
+        }
+        input[type="radio"], input[type="checkbox"] {
+            accent-color: var(--accent);
+        }
+        
+        /* Buttons */
+        .container button {
+            background-color: var(--accent);
+            border: 2px solid var(--accent);
+            color: var(--bg);
+            font-family: 'Press Start 2P', cursive;
+            font-weight: 400;
+            font-size: 0.7rem;
+            padding: 10px 14px;
+            border-radius: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: transform 0.05s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+            image-rendering: pixelated;
+            box-shadow: 0 0 0 0 var(--glow);
+        }
+        .container button:hover:not(:disabled) {
+            background-color: var(--accent-2);
+            box-shadow: 0 0 0 3px var(--glow);
+        }
+        .container button:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+        .container button:disabled {
+            filter: grayscale(40%) brightness(0.85);
+            cursor: not-allowed;
+        }
+        
+        /* Delete button */
+        .hex-container > button {
+            background-color: var(--danger) !important;
+            border-color: var(--danger-d) !important;
+            color: #fff !important;
+            border-width: 2px !important;
+        }
+        .hex-container > button:hover {
+            background-color: var(--danger-d) !important;
+        }
+        
+        /* Layout containers */
+        .layout-container {
+            border: none;
+            cursor: pointer;
+            transition: box-shadow 0.2s ease, transform 0.1s ease;
+        }
+        .layout-container:hover {
+            box-shadow: 0 0 0 3px var(--glow);
+        }
+        .layout-container.selected {
+            box-shadow: 0 0 0 4px rgba(252,163,17,0.6), 0 0 18px rgba(252,163,17,0.3);
+            transform: scale(1.01);
+        }
+        
+        /* Hexagon tiles */
+        #hexagon-list .hex-container canvas {
+            border: 2px solid var(--accent);
+            background-color: var(--panel);
+            transition: box-shadow 0.2s ease, transform 0.1s ease, border-color 0.2s ease;
+        }
+        #hexagon-list .hex-container.selected canvas {
+            border-color: var(--highlight);
+            box-shadow: 0 0 0 4px rgba(252,163,17,0.6), 0 0 15px rgba(252,163,17,0.35);
+            transform: scale(1.05);
+            border-width: 4px;
+        }
+        
+        /* Progress bars */
+        #progress-container, #progress-container2 {
+            background-color: #4b3f78 !important;
+            border: 2px solid var(--accent);
+            border-radius: 0;
         }
         #progress-bar, #progress-bar2 {
+            background-color: var(--highlight) !important;
+            height: 10px !important;
             transition: width 0.2s ease-out;
         }
+        
+        /* Text styles */
         .control-group {
             margin-bottom: 1rem;
         }
         .results-summary {
-            color: #9ca3af;
+            color: var(--muted);
             font-style: italic;
             margin-top: 0.5rem;
         }
-        .layout-container {
-            border: 1px solid #374151;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            cursor: pointer;
-            transition: border-color 0.2s ease-in-out;
+        #progress-text, #progress-text2,
+        #estimation-text1, #estimation-text2 {
+            color: var(--muted);
         }
-        .layout-container.selected {
-            border-color: #34d399; /* green-400 */
-            box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+        .text-yellow-400 {
+            color: var(--highlight) !important;
         }
-        #hexagon-list .hex-container canvas {
-            transition: all 0.2s ease-in-out;
+        
+        /* Ensure smaller text is readable with pixel font */
+        .text-sm {
+            font-size: 0.65rem !important;
         }
-        #hexagon-list .hex-container.selected canvas {
-            border-color: #34d399; /* green-400 */
-            box-shadow: 0 0 15px rgba(52, 211, 153, 0.8);
-            border-width: 4px;
-            transform: scale(1.05);
+        .text-xs {
+            font-size: 0.6rem !important;
+        }
+        .text-lg {
+            font-size: 0.9rem !important;
+        }
+        .text-xl {
+            font-size: 1.1rem !important;
         }
     </style>
 </head>
