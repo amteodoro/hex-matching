@@ -188,6 +188,9 @@
             width: 100%;
             max-width: 420px;
             margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         
         #grid1-layouts, #grid2-layouts {
@@ -577,6 +580,22 @@
             box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
         }
         
+        /* Modal styles */
+        #delete-confirmation-modal {
+            backdrop-filter: blur(5px);
+            transition: opacity 0.3s ease;
+        }
+        #delete-confirmation-modal.hidden {
+            display: none;
+            opacity: 0;
+        }
+        #delete-confirmation-modal button {
+            transition: all 0.2s ease;
+        }
+        #delete-confirmation-modal button:hover {
+            transform: translateY(-2px);
+        }
+        
         /* Shape pool styles */
         .shape-pool-item {
             position: relative;
@@ -675,8 +694,20 @@
     </style>
 </head>
 <body>
-    <!-- Toast notification container -->
+<!-- Toast notification container -->
     <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h2 class="text-xl font-bold text-red-500 mb-4">⚠️ Delete All Available Toyz</h2>
+            <p class="text-gray-300 mb-6">Are you sure you want to delete ALL Toyz from the Available pool? This action cannot be undone.</p>
+            <div class="flex justify-end gap-4">
+                <button id="cancel-delete" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md">Cancel</button>
+                <button id="confirm-delete" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">Delete All</button>
+            </div>
+        </div>
+    </div>
 
     <div class="container">
         <h1 class="text-xl font-semibold">Pixel Heroes Adventure - Toyz Optimizer</h1>
@@ -690,7 +721,20 @@
             <div id="add-shape-form" class="my-4 p-4 border border-gray-600 rounded-lg">
                 <h3 class="text-lg font-semibold text-gray-300 mb-2">Add a New Toyz</h3>
                 <p class="text-sm text-gray-500 mt-1 mb-4">Add your Toyz pieces to the collection. Each Toyz has different rarities and elements that affect your hero's power!</p>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                
+                <!-- ToyZ Autocomplete Section -->
+                <div class="mb-4">
+                    <label for="toyz-search" class="block text-sm font-medium text-gray-400 mb-2">Search ToyZ Database</label>
+                    <div class="relative">
+                        <input type="text" id="toyz-search" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white" placeholder="Start typing ToyZ name..." autocomplete="off">
+                        <div id="toyz-suggestions" class="absolute z-50 w-full bg-gray-800 border border-gray-600 rounded-md mt-1 max-h-40 overflow-y-auto" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                
+                
+                <!-- Original Form Fields -->
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                     <div>
                         <label for="new-hex-id" class="block text-sm font-medium text-gray-400">ID</label>
                         <input type="number" id="new-hex-id" class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md p-2 text-white" disabled/>
@@ -704,16 +748,45 @@
                         <select id="new-hex-rarity" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white"></select>
                     </div>
                     <div>
+                        <label for="toyz-level" class="block text-sm font-medium text-gray-400">Level</label>
+                        <select id="toyz-level" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white">
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                        </select>
+                    </div>
+                    <div>
                         <label for="new-hex-element" class="block text-sm font-medium text-gray-400">Element</label>
                         <select id="new-hex-element" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white"></select>
                     </div>
                 </div>
+                
                 <div class="mt-4">
                     <label class="block text-sm font-medium text-gray-400">Sides (Top-Left, Top-Right, Right, Bottom-Right, Bottom-Left, Left)</label>
                     <div id="new-hex-sides" class="grid grid-cols-6 gap-2 mt-1"></div>
                 </div>
-                <button id="add-shape-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md mt-4">Add Toyz</button>
-                <button id="add-random-shape-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md mt-4">Add Random Toyz</button>
+                
+                <!-- Manual Entry Fields (for custom ToyZ) -->
+                <div id="manual-entry" style="display: none;">
+                    <!-- Dynamic Buff Input Fields -->
+                    <div id="dynamic-buff-fields" class="mt-4">
+                        <label class="block text-sm font-medium text-gray-400 mb-2">ToyZ Buffs (based on level)</label>
+                        <p class="text-xs text-gray-500 mb-3">Configure the buffs for your custom ToyZ. Buff availability depends on level: 1st buff at level 0+, 2nd at level 2+, 3rd at level 4+, 4th at level 6+.</p>
+                        <div id="buff-inputs" class="space-y-3"></div>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2 mt-4">
+                    <button id="add-shape-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Add ToyZ</button>
+                    <button id="update-shape-button" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-md" style="display: none;">Update ToyZ</button>
+                    <button id="add-random-shape-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Add Random ToyZ</button>
+                    <button id="clear-selection" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md">Clear Selection</button>
+                </div>
             </div>
 
             <h3 class="text-lg font-semibold text-gray-300">Toyz Collection</h3>
@@ -753,6 +826,10 @@
                     <button id="move-to-available" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md flex items-center gap-2 w-32" title="Move selected Toyz to Available Pool">
                         <span class="text-lg">←</span>
                         <span class="hidden lg:inline">Return</span>
+                    </button>
+                    <button id="delete-all-available" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md flex items-center gap-2 w-32" title="Delete ALL Toyz from Available Pool">
+                        <span class="text-lg">🗑️</span>
+                        <span class="hidden lg:inline">Delete All</span>
                     </button>
                 </div>
                 
@@ -831,12 +908,30 @@
         </div>
     </div>
 
+    <!-- Import ToyZ database -->
+    <script src="toyz-data.js"></script>
+    
     <script>
         // --- Core Puzzle Logic ---
-        const elements = ['normal', 'fire', 'water', 'wind', 'plant', 'mud', 'dark', 'light', 'ice', 'electric', 'poison'];
+        const elements = ['normal', 'fire', 'water', 'wind', 'plant', 'ground', 'dark', 'light', 'ice', 'electric', 'poison'];
         const elementColors = {
             normal: '#A8A77A', fire: '#EE8130', water: '#6390F0', electric: '#F7D02C', plant: '#7AC74C',
-            ice: '#96D9D6', mud: '#E2BF65', dark: '#705746', light: '#F85888', wind: '#A98FF3', poison: '#A040A0'
+            ice: '#96D9D6', ground: '#E2BF65', dark: '#705746', light: '#F85888', wind: '#A98FF3', poison: '#A040A0'
+        };
+        
+        // Map game elements to display elements
+        const elementMapping = {
+            'Ground': 'ground',
+            'Normal': 'normal', 
+            'Fire': 'fire',
+            'Water': 'water', 
+            'Wind': 'wind',
+            'Plant': 'plant',
+            'Dark': 'dark',
+            'Light': 'light',
+            'Ice': 'ice',
+            'Electric': 'electric',
+            'Poison': 'poison'
         };
 
 
@@ -920,7 +1015,7 @@
             return divideBigInt(permutations, OPS_PER_SECOND).quotient;
         }
         
-        const rarityValue = { 'mythic': 5, 'legendary': 4, 'epic': 3, 'uncommon': 2, 'common': 1, 'none': 0 };
+        const rarityValue = { 'mythic': 5, 'legendary': 4, 'epic': 3, 'rare': 2, 'common': 1, 'none': 0 };
 
         function calculateRarityScore(arrangement) {
             return Object.values(arrangement).reduce((sum, hex) => sum + (rarityValue[hex.rarity] || 0), 0);
@@ -947,10 +1042,23 @@
                 }
             });
 
+            // Side ordering: top-left (0), top-right (1), right (2), bottom-right (3), bottom-left (4), left (5)
             const connections = [
-                { p1: 'T1', s1: 2, p2: 'T2', s2: 5 }, { p1: 'M1', s1: 2, p2: 'M2', s2: 5 }, { p1: 'M2', s1: 2, p2: 'M3', s2: 5 }, { p1: 'B1', s1: 2, p2: 'B2', s2: 5 },
-                { p1: 'T1', s1: 4, p2: 'M1', s2: 1 }, { p1: 'T1', s1: 3, p2: 'M2', s2: 0 }, { p1: 'T2', s1: 4, p2: 'M2', s2: 1 }, { p1: 'T2', s1: 3, p2: 'M3', s2: 0 },
-                { p1: 'M1', s1: 3, p2: 'B1', s2: 0 }, { p1: 'M2', s1: 4, p2: 'B1', s2: 1 }, { p1: 'M2', s1: 3, p2: 'B2', s2: 0 }, { p1: 'M3', s1: 4, p2: 'B2', s2: 1 }
+                // Horizontal connections (right to left)
+                { p1: 'T1', s1: 2, p2: 'T2', s2: 5 },  // T1 right to T2 left
+                { p1: 'M1', s1: 2, p2: 'M2', s2: 5 },  // M1 right to M2 left
+                { p1: 'M2', s1: 2, p2: 'M3', s2: 5 },  // M2 right to M3 left
+                { p1: 'B1', s1: 2, p2: 'B2', s2: 5 },  // B1 right to B2 left
+                
+                // Diagonal connections
+                { p1: 'M1', s1: 1, p2: 'T1', s2: 4 },  // M1 top-right to T1 bottom-left
+                { p1: 'T1', s1: 3, p2: 'M2', s2: 0 },  // T1 bottom-right to M2 top-left
+                { p1: 'T2', s1: 4, p2: 'M2', s2: 1 },  // T2 bottom-left to M2 top-right
+                { p1: 'T2', s1: 3, p2: 'M3', s2: 0 },  // T2 bottom-right to M3 top-left
+                { p1: 'M1', s1: 3, p2: 'B1', s2: 0 },  // M1 bottom-right to B1 top-left
+                { p1: 'M2', s1: 4, p2: 'B1', s2: 1 },  // M2 bottom-left to B1 top-right
+                { p1: 'M2', s1: 3, p2: 'B2', s2: 0 },  // M2 bottom-right to B2 top-left
+                { p1: 'M3', s1: 4, p2: 'B2', s2: 1 }   // M3 bottom-left to B2 top-right
             ];
             connections.forEach(({ p1, s1, p2, s2 }) => {
                 const match = calculateMatchScorePair(p[p1], p[p2], s1, s2);
@@ -961,7 +1069,108 @@
                     }
                 }
             });
-            return { score, colorCounts, elementCounts };
+            
+            // Calculate buff summary with both ToyZ buffs and layout buffs
+            const buffSummary = calculateLayoutBuffs(p, colorCounts);
+            
+            return { score, colorCounts, elementCounts, buffSummary };
+        }
+        
+        function calculateLayoutBuffs(arrangement, colorCounts = null) {
+            const buffTotals = {};
+            const toyzInLayout = [];
+            
+            // Add ToyZ buffs (including level 0)
+            Object.values(arrangement).forEach(hex => {
+                if (hex && hex.toyzData && hex.toyzLevel !== undefined) {
+                    const level = hex.toyzLevel;
+                    toyzInLayout.push({ toyZ: hex.toyzData, level: level, name: hex.label });
+                    const activeBuffs = getActiveBuffs(hex.toyzData, level);
+                    
+                    activeBuffs.forEach(buff => {
+                        if (!buffTotals[buff.name]) {
+                            buffTotals[buff.name] = {
+                                value: 0,
+                                isPercentage: buff.isPercentage,
+                                count: 0
+                            };
+                        }
+                        buffTotals[buff.name].value += buff.value;
+                        buffTotals[buff.name].count += 1;
+                    });
+                }
+            });
+            
+            // Add layout buffs from color matches with bonus for 4+ matches
+            if (colorCounts) {
+                const colorToBuffMapping = {
+                    'gray': { name: 'Basic Damage', baseValue: 3, bonusValue: 2 },
+                    'red': { name: 'Boss Damage', baseValue: 2, bonusValue: 1 },
+                    'yellow': { name: 'Skill Damage', baseValue: 2, bonusValue: 1 },
+                    'blue': { name: 'All Damage', baseValue: 2, bonusValue: 1 },
+                    'purple': { name: 'Crit Damage', baseValue: 2, bonusValue: 1 }
+                };
+                
+                Object.entries(colorCounts).forEach(([color, count]) => {
+                    if (count > 0 && colorToBuffMapping[color]) {
+                        const buffInfo = colorToBuffMapping[color];
+                        const buffName = `${buffInfo.name} (Layout)`;
+                        
+                        // Base buff value
+                        let buffValue = buffInfo.baseValue * count;
+                        
+                        // Add bonus if 4 or more matches
+                        if (count >= 4) {
+                            buffValue += buffInfo.bonusValue;
+                        }
+                        
+                        if (!buffTotals[buffName]) {
+                            buffTotals[buffName] = {
+                                value: 0,
+                                isPercentage: true,
+                                count: 0
+                            };
+                        }
+                        buffTotals[buffName].value += buffValue;
+                        buffTotals[buffName].count += count;
+                    }
+                });
+            }
+            
+            // Add element damage buffs (3+ ToyZ of same element, excluding 'normal')
+            const elementCounts = {};
+            Object.values(arrangement).forEach(hex => {
+                if (hex && hex.element && hex.element !== 'normal' && hex.label !== 'empty') {
+                    if (!elementCounts[hex.element]) {
+                        elementCounts[hex.element] = 0;
+                    }
+                    elementCounts[hex.element]++;
+                }
+            });
+            
+            Object.entries(elementCounts).forEach(([element, count]) => {
+                if (count >= 3) {
+                    const elementName = element.charAt(0).toUpperCase() + element.slice(1);
+                    let buffValue = 0;
+                    
+                    if (count >= 7) {
+                        buffValue = 50;
+                    } else if (count >= 5) {
+                        buffValue = 25;
+                    } else if (count >= 3) {
+                        buffValue = 10;
+                    }
+                    
+                    const buffName = `${elementName} Damage (Element)`;
+                    buffTotals[buffName] = {
+                        value: buffValue,
+                        isPercentage: true,
+                        count: count
+                    };
+                }
+            });
+            
+            return { buffTotals, toyzInLayout };
         }
 
         async function findAllBestArrangements(hexagons, centerId, searchMode, onProgress, forcedHexagonIds = new Set()) {
@@ -978,6 +1187,27 @@
             
             let candidatePieces = hexagons.slice();
             const totalSlots = slots.length;
+
+            // Special case: single ToyZ in center with all other slots empty
+            if (centerHex && hexagons.length === 1 && hexagons[0].id === centerId) {
+                // Create arrangement with only center piece and empty slots
+                const arrangement = { M2: centerHex };
+                const dummyHex = new Hexagon(0, 'empty', 'none', Array(6).fill('none'), 'none');
+                
+                // Fill all other slots with empty hexagons
+                slots.forEach((slot, index) => {
+                    arrangement[slot] = { ...dummyHex, id: `dummy-${slot}` };
+                });
+                
+                // Calculate score for this arrangement
+                const { score, colorCounts, elementCounts } = calculateArrangementScore(arrangement);
+                
+                onProgress(1, 1, 1);
+                return { 
+                    score, 
+                    arrangements: [{ arrangement, colorCounts, elementCounts }] 
+                };
+            }
 
             if (candidatePieces.length < totalSlots) {
                 const dummyHex = new Hexagon(0, 'empty', 'none', Array(6).fill('none'), 'none');
@@ -1205,19 +1435,38 @@
 
         // --- Visualisation & UI Logic ---
         const colorMap = { 'red': '#ef4444', 'blue': '#3b82f6', 'purple': '#8b5cf6', 'gray': '#acb0b6', 'yellow': '#eab308', 'none': '#374151' };
-        const rarityColor = { 'mythic': '#ef4444', 'legendary': '#eab308', 'epic': '#8b5cf6', 'uncommon': '#22c55e', 'common': '#acb0b6' };
+        const rarityColor = { 'mythic': '#ef4444', 'legendary': '#eab308', 'epic': '#8b5cf6', 'rare': '#22c55e', 'common': '#acb0b6' };
 
         function getSideMidpoint(size, sideIndex) {
-            const angle1 = (Math.PI / 3) * sideIndex - (5 * Math.PI / 6);
-            const angle2 = (Math.PI / 3) * (sideIndex + 1) - (5 * Math.PI / 6);
-            return { x: (size * Math.cos(angle1) + size * Math.cos(angle2)) / 2, y: (size * Math.sin(angle1) + size * Math.sin(angle2)) / 2 };
+            // Side ordering: top-left (0), top-right (1), right (2), bottom-right (3), bottom-left (4), left (5)
+            // Map side indices to the correct vertex pairs
+            const sideToVertices = {
+                0: [5, 0], // top-left edge: between vertex 5 (left) and vertex 0 (top)
+                1: [0, 1], // top-right edge: between vertex 0 (top) and vertex 1 (top-right)
+                2: [1, 2], // right edge: between vertex 1 (top-right) and vertex 2 (bottom-right)
+                3: [2, 3], // bottom-right edge: between vertex 2 (bottom-right) and vertex 3 (bottom)
+                4: [3, 4], // bottom-left edge: between vertex 3 (bottom) and vertex 4 (bottom-left)
+                5: [4, 5]  // left edge: between vertex 4 (bottom-left) and vertex 5 (top-left)
+            };
+            
+            const [v1, v2] = sideToVertices[sideIndex];
+            const angle1 = (Math.PI / 3) * v1 - (Math.PI / 2);
+            const angle2 = (Math.PI / 3) * v2 - (Math.PI / 2);
+            
+            return {
+                x: (size * Math.cos(angle1) + size * Math.cos(angle2)) / 2,
+                y: (size * Math.sin(angle1) + size * Math.sin(angle2)) / 2
+            };
         }
 
         function drawConnections(ctx, arrangement, positions, size) {
+            // Side ordering: top-left (0), top-right (1), right (2), bottom-right (3), bottom-left (4), left (5)
             const connections = [
+                // Horizontal connections
                 { p1: 'T1', s1: 2, p2: 'T2', s2: 5 }, { p1: 'M1', s1: 2, p2: 'M2', s2: 5 }, { p1: 'M2', s1: 2, p2: 'M3', s2: 5 }, { p1: 'B1', s1: 2, p2: 'B2', s2: 5 },
-                { p1: 'T1', s1: 4, p2: 'M1', s2: 1 }, { p1: 'T1', s1: 3, p2: 'M2', s2: 0 }, { p1: 'T2', s1: 4, p2: 'M2', s2: 1 }, { p1: 'T2', s1: 3, p2: 'M3', s2: 0 },
-                { p1: 'M1', s1: 3, p2: 'B1', s2: 0 }, { p1: 'M2', s1: 4, p2: 'B1', s2: 1 }, { p1: 'M2', s1: 3, p2: 'B2', s2: 0 }, { p1: 'M3', s1: 4, p2: 'B2', s2: 1 }
+                // Diagonal connections
+                { p1: 'T1', s1: 3, p2: 'M1', s2: 1 }, { p1: 'T1', s1: 4, p2: 'M2', s2: 0 }, { p1: 'T2', s1: 4, p2: 'M2', s2: 1 }, { p1: 'T2', s1: 3, p2: 'M3', s2: 0 },
+                { p1: 'M1', s1: 3, p2: 'B1', s2: 1 }, { p1: 'M1', s1: 4, p2: 'B1', s2: 0 }, { p1: 'M2', s1: 3, p2: 'B2', s2: 1 }, { p1: 'M3', s1: 4, p2: 'B2', s2: 0 }
             ];
             connections.forEach(({ p1, s1, p2, s2 }) => {
                 const hex1 = arrangement[p1]; const hex2 = arrangement[p2];
@@ -1234,64 +1483,643 @@
             });
         }
 
-        function drawHexagon(ctx, x, y, size, hexagon) {
-            ctx.save();
-            ctx.translate(x, y);
-            for (let i = 0; i < 6; i++) {
-                const angle1 = (Math.PI / 3) * i - (5 * Math.PI / 6);
-                const angle2 = (Math.PI / 3) * (i + 1) - (5 * Math.PI / 6);
-                const x1 = size * Math.cos(angle1); const y1 = size * Math.sin(angle1);
-                const x2 = size * Math.cos(angle2); const y2 = size * Math.sin(angle2);
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.strokeStyle = colorMap[hexagon.sides[i]];
-                ctx.lineWidth = 10;
-                ctx.stroke();
+        // Global image cache to prevent repeated loading
+        const imageCache = new Map();
+        
+        function loadImage(src) {
+            if (imageCache.has(src)) {
+                return imageCache.get(src);
             }
-            ctx.fillStyle = rarityColor[hexagon.rarity];
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.font = 'bold 12px Inter';
-            ctx.fillText(hexagon.label, 0, -12);
-            ctx.font = '10px Inter';
-            ctx.fillText(`(ID: ${hexagon.id})`, 0, 0);
-            if (hexagon.element && hexagon.element !== 'none') {
-                ctx.fillStyle = elementColors[hexagon.element] || '#ffffff';
-                ctx.font = 'bold 10px Inter';
-                ctx.fillText(hexagon.element.toUpperCase(), 0, 12);
-            }
-            ctx.restore();
+            
+            const img = new Image();
+            img.crossOrigin = 'anonymous'; // Handle CORS for external images
+            img.src = src;
+            imageCache.set(src, img);
+            return img;
         }
 
-        function drawArrangement(ctx, arrangement, title) {
+        function createHexagonSVG(x, y, size, hexagon) {
+            // Calculate hexagon points
+            const points = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i - (Math.PI / 2); // Start from top
+                const px = x + size * Math.cos(angle);
+                const py = y + size * Math.sin(angle);
+                points.push(`${px},${py}`);
+            }
+            
+            // Create SVG group for hexagon
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('class', 'hexagon-item');
+            
+            // Handle empty hexagons (show as dashed outline)
+            const isEmpty = !hexagon || hexagon.label === 'empty';
+            
+            // Create hexagon polygon (background)
+            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            polygon.setAttribute('points', points.join(' '));
+            if (isEmpty) {
+                polygon.setAttribute('fill', 'rgba(42, 42, 42, 0.1)');
+                polygon.setAttribute('stroke', '#666');
+                polygon.setAttribute('stroke-width', '1');
+                polygon.setAttribute('stroke-dasharray', '3,3');
+            } else {
+                polygon.setAttribute('fill', 'rgba(42, 42, 42, 0.3)');
+                polygon.setAttribute('stroke', '#aaa');
+                polygon.setAttribute('stroke-width', '0.5');
+            }
+            g.appendChild(polygon);
+            
+            // Skip content for empty hexagons
+            if (isEmpty) {
+                // Add "EMPTY" text for empty slots
+                const emptyText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                emptyText.setAttribute('x', x);
+                emptyText.setAttribute('y', y);
+                emptyText.setAttribute('text-anchor', 'middle');
+                emptyText.setAttribute('dominant-baseline', 'middle');
+                emptyText.setAttribute('font-family', 'Inter');
+                emptyText.setAttribute('font-size', Math.max(8, size * 0.15));
+                emptyText.setAttribute('font-weight', 'bold');
+                emptyText.setAttribute('fill', '#666');
+                emptyText.textContent = 'EMPTY';
+                g.appendChild(emptyText);
+                
+                // Still draw hexagon sides for empty slots (all sides are 'none')
+                const sideToVertices = [
+                    [5, 0], [0, 1], [1, 2], [2, 3], [3, 4], [4, 5]
+                ];
+                
+                for (let i = 0; i < 6; i++) {
+                    const [v1, v2] = sideToVertices[i];
+                    const angle1 = (Math.PI / 3) * v1 - (Math.PI / 2);
+                    const angle2 = (Math.PI / 3) * v2 - (Math.PI / 2);
+                    const x1 = x + size * Math.cos(angle1);
+                    const y1 = y + size * Math.sin(angle1);
+                    const x2 = x + size * Math.cos(angle2);
+                    const y2 = y + size * Math.sin(angle2);
+                    
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('class', 'border-line');
+                    line.setAttribute('data-border-index', i);
+                    line.setAttribute('x1', x1);
+                    line.setAttribute('y1', y1);
+                    line.setAttribute('x2', x2);
+                    line.setAttribute('y2', y2);
+                    line.setAttribute('stroke', colorMap['none']);
+                    line.setAttribute('stroke-width', Math.max(2, size * 0.1));
+                    line.setAttribute('stroke-linecap', 'round');
+                    g.appendChild(line);
+                }
+                
+                return g;
+            }
+            
+            // Add ToyZ icon if available
+            if (hexagon.toyzData && hexagon.toyzData.icon) {
+                const iconSize = size * 1.2;
+                const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+                image.setAttribute('x', x - iconSize/2);
+                image.setAttribute('y', y - iconSize/2 - size * 0.1);
+                image.setAttribute('width', iconSize);
+                image.setAttribute('height', iconSize);
+                image.setAttribute('href', hexagon.toyzData.icon);
+                image.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+                g.appendChild(image);
+                
+                // Add level indicator if ToyZ has level data
+                if (hexagon.toyzLevel && hexagon.toyzLevel > 0) {
+                    const levelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    levelText.setAttribute('x', x);
+                    levelText.setAttribute('y', y + size * 0.6);
+                    levelText.setAttribute('text-anchor', 'middle');
+                    levelText.setAttribute('dominant-baseline', 'middle');
+                    levelText.setAttribute('font-family', 'Inter');
+                    levelText.setAttribute('font-size', Math.max(8, size * 0.2));
+                    levelText.setAttribute('font-weight', 'bold');
+                    levelText.setAttribute('fill', '#FFD700');
+                    levelText.setAttribute('stroke', '#000000');
+                    levelText.setAttribute('stroke-width', '1');
+                    levelText.textContent = `L${hexagon.toyzLevel}`;
+                    g.appendChild(levelText);
+                }
+                
+                // Add ToyZ text below icon
+                const textY = y + size * 0.35;
+                const baseFontSize = Math.max(5, size * 0.12);
+                const labelFontSize = Math.max(6, size * 0.14);
+                const lineSpacing = baseFontSize * 1.4;
+                
+                // Name/label
+                const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                nameText.setAttribute('x', x);
+                nameText.setAttribute('y', textY);
+                nameText.setAttribute('text-anchor', 'middle');
+                nameText.setAttribute('dominant-baseline', 'middle');
+                nameText.setAttribute('font-family', 'Inter');
+                nameText.setAttribute('font-size', labelFontSize);
+                nameText.setAttribute('font-weight', 'bold');
+                nameText.setAttribute('fill', rarityColor[hexagon.rarity] || '#ffffff');
+                nameText.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
+                nameText.setAttribute('stroke-width', '2');
+                nameText.setAttribute('paint-order', 'stroke fill');
+                let displayLabel = hexagon.label;
+                if (displayLabel.length > 8) {
+                    displayLabel = displayLabel.substring(0, 8) + '...';
+                }
+                nameText.textContent = displayLabel;
+                g.appendChild(nameText);
+                
+                // ID
+                const idText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                idText.setAttribute('x', x);
+                idText.setAttribute('y', textY + lineSpacing);
+                idText.setAttribute('text-anchor', 'middle');
+                idText.setAttribute('dominant-baseline', 'middle');
+                idText.setAttribute('font-family', 'Inter');
+                idText.setAttribute('font-size', baseFontSize);
+                idText.setAttribute('fill', rarityColor[hexagon.rarity] || '#ffffff');
+                idText.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
+                idText.setAttribute('stroke-width', '1');
+                idText.setAttribute('paint-order', 'stroke fill');
+                idText.textContent = `ID: ${hexagon.id}`;
+                g.appendChild(idText);
+                
+                // Element - keep as text with color
+                if (hexagon.element && hexagon.element !== 'none') {
+                    const elementText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    elementText.setAttribute('x', x);
+                    elementText.setAttribute('y', textY + lineSpacing * 2);
+                    elementText.setAttribute('text-anchor', 'middle');
+                    elementText.setAttribute('dominant-baseline', 'middle');
+                    elementText.setAttribute('font-family', 'Inter');
+                    elementText.setAttribute('font-size', baseFontSize);
+                    elementText.setAttribute('font-weight', 'bold');
+                    elementText.setAttribute('fill', elementColors[hexagon.element] || '#ffffff');
+                    elementText.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
+                    elementText.setAttribute('stroke-width', '1');
+                    elementText.setAttribute('paint-order', 'stroke fill');
+                    elementText.textContent = hexagon.element.toUpperCase();
+                    g.appendChild(elementText);
+                }
+            } else {
+                // Display text for random shapes or when no ToyZ icon is available
+                const baseFontSize = Math.max(6, size * 0.15);
+                const labelFontSize = Math.max(8, size * 0.18);
+                const lineSpacing = baseFontSize * 1.5;
+                
+                // Name/label
+                const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                nameText.setAttribute('x', x);
+                nameText.setAttribute('y', y - lineSpacing);
+                nameText.setAttribute('text-anchor', 'middle');
+                nameText.setAttribute('dominant-baseline', 'middle');
+                nameText.setAttribute('font-family', 'Inter');
+                nameText.setAttribute('font-size', labelFontSize);
+                nameText.setAttribute('font-weight', 'bold');
+                nameText.setAttribute('fill', rarityColor[hexagon.rarity] || '#ffffff');
+                let displayLabel = hexagon.label;
+                if (displayLabel.length > 10) {
+                    displayLabel = displayLabel.substring(0, 10) + '...';
+                }
+                nameText.textContent = displayLabel;
+                g.appendChild(nameText);
+                
+                // ID
+                const idText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                idText.setAttribute('x', x);
+                idText.setAttribute('y', y);
+                idText.setAttribute('text-anchor', 'middle');
+                idText.setAttribute('dominant-baseline', 'middle');
+                idText.setAttribute('font-family', 'Inter');
+                idText.setAttribute('font-size', baseFontSize);
+                idText.setAttribute('fill', rarityColor[hexagon.rarity] || '#ffffff');
+                idText.textContent = `ID: ${hexagon.id}`;
+                g.appendChild(idText);
+                
+                // Element - keep as text with color
+                if (hexagon.element && hexagon.element !== 'none') {
+                    const elementText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    elementText.setAttribute('x', x);
+                    elementText.setAttribute('y', y + lineSpacing);
+                    elementText.setAttribute('text-anchor', 'middle');
+                    elementText.setAttribute('dominant-baseline', 'middle');
+                    elementText.setAttribute('font-family', 'Inter');
+                    elementText.setAttribute('font-size', baseFontSize);
+                    elementText.setAttribute('font-weight', 'bold');
+                    elementText.setAttribute('fill', elementColors[hexagon.element] || '#ffffff');
+                    elementText.textContent = hexagon.element.toUpperCase();
+                    g.appendChild(elementText);
+                }
+            }
+            
+            // Draw hexagon sides as lines
+            // Side ordering: top-left (0), top-right (1), right (2), bottom-right (3), bottom-left (4), left (5)
+            const sideToVertices = [
+                [5, 0], // side 0: top-left edge
+                [0, 1], // side 1: top-right edge
+                [1, 2], // side 2: right edge
+                [2, 3], // side 3: bottom-right edge
+                [3, 4], // side 4: bottom-left edge
+                [4, 5]  // side 5: left edge
+            ];
+            
+            for (let i = 0; i < 6; i++) {
+                const [v1, v2] = sideToVertices[i];
+                const angle1 = (Math.PI / 3) * v1 - (Math.PI / 2);
+                const angle2 = (Math.PI / 3) * v2 - (Math.PI / 2);
+                const x1 = x + size * Math.cos(angle1);
+                const y1 = y + size * Math.sin(angle1);
+                const x2 = x + size * Math.cos(angle2);
+                const y2 = y + size * Math.sin(angle2);
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('class', 'border-line');
+                line.setAttribute('data-border-index', i);
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', colorMap[hexagon.sides[i]]);
+                line.setAttribute('stroke-width', Math.max(2, size * 0.1));
+                line.setAttribute('stroke-linecap', 'round');
+                g.appendChild(line);
+            }
+            
+            return g;
+        }
+
+        function drawArrangement(ctx, arrangement, title, layoutContainer = null) {
             const canvas = ctx.canvas;
-            const centerX = canvas.width / 2; const centerY = canvas.height / 2;
-            const size = 45; const spacingFactor = 1.15;
+            const centerX = canvas.width / 2; 
+            const centerY = canvas.height / 2;
+            const size = 45; 
+            const spacingFactor = 1.15;
             const widthBetween = size * Math.sqrt(3) * spacingFactor;
             const heightBetween = size * 1.5 * spacingFactor;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
             if (!arrangement) {
-                ctx.fillStyle = 'white'; ctx.font = '20px Inter'; ctx.textAlign = 'center';
+                ctx.fillStyle = 'white'; 
+                ctx.font = '20px Inter'; 
+                ctx.textAlign = 'center';
                 ctx.fillText(title, centerX, centerY);
                 return;
             }
+            
             const positions = {
-                M2: { x: centerX, y: centerY }, M1: { x: centerX - widthBetween, y: centerY }, M3: { x: centerX + widthBetween, y: centerY },
-                T1: { x: centerX - widthBetween / 2, y: centerY - heightBetween }, T2: { x: centerX + widthBetween / 2, y: centerY - heightBetween },
-                B1: { x: centerX - widthBetween / 2, y: centerY + heightBetween }, B2: { x: centerX + widthBetween / 2, y: centerY + heightBetween }
+                M2: { x: centerX, y: centerY }, 
+                M1: { x: centerX - widthBetween, y: centerY }, 
+                M3: { x: centerX + widthBetween, y: centerY },
+                T1: { x: centerX - widthBetween / 2, y: centerY - heightBetween }, 
+                T2: { x: centerX + widthBetween / 2, y: centerY - heightBetween },
+                B1: { x: centerX - widthBetween / 2, y: centerY + heightBetween }, 
+                B2: { x: centerX + widthBetween / 2, y: centerY + heightBetween }
             };
-            drawConnections(ctx, arrangement, positions, size);
-            for (const key in arrangement) {
-                const hexagon = arrangement[key]; const pos = positions[key];
-                if (hexagon && pos) { drawHexagon(ctx, pos.x, pos.y, size, hexagon); }
+            
+            // Create a single SVG for the entire arrangement
+            if (layoutContainer) {
+                const mainSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                mainSvg.setAttribute('width', canvas.width);
+                mainSvg.setAttribute('height', canvas.height);
+                mainSvg.style.position = 'relative';
+                mainSvg.style.display = 'block';
+                mainSvg.style.margin = '0 auto';
+                mainSvg.style.pointerEvents = 'none';
+                
+                // Add connection lines first (behind hexagons)
+                // Side ordering: top-left (0), top-right (1), right (2), bottom-right (3), bottom-left (4), left (5)
+                const connections = [
+                    // Horizontal connections (right to left)
+                    { p1: 'T1', s1: 2, p2: 'T2', s2: 5 },  // T1 right to T2 left
+                    { p1: 'M1', s1: 2, p2: 'M2', s2: 5 },  // M1 right to M2 left
+                    { p1: 'M2', s1: 2, p2: 'M3', s2: 5 },  // M2 right to M3 left
+                    { p1: 'B1', s1: 2, p2: 'B2', s2: 5 },  // B1 right to B2 left
+                    
+                    // Diagonal connections
+                    { p1: 'M1', s1: 1, p2: 'T1', s2: 4 },  // M1 top-right to T1 bottom-left
+                    { p1: 'T1', s1: 3, p2: 'M2', s2: 0 },  // T1 bottom-right to M2 top-left
+                    { p1: 'T2', s1: 4, p2: 'M2', s2: 1 },  // T2 bottom-left to M2 top-right
+                    { p1: 'T2', s1: 3, p2: 'M3', s2: 0 },  // T2 bottom-right to M3 top-left
+                    { p1: 'M1', s1: 3, p2: 'B1', s2: 0 },  // M1 bottom-right to B1 top-left
+                    { p1: 'M2', s1: 4, p2: 'B1', s2: 1 },  // M2 bottom-left to B1 top-right
+                    { p1: 'M2', s1: 3, p2: 'B2', s2: 0 },  // M2 bottom-right to B2 top-left
+                    { p1: 'M3', s1: 4, p2: 'B2', s2: 1 }   // M3 bottom-left to B2 top-right
+                ];
+                
+                connections.forEach(({ p1, s1, p2, s2 }) => {
+                    const hex1 = arrangement[p1]; 
+                    const hex2 = arrangement[p2];
+                    if (hex1 && hex2 && hex1.sides && hex2.sides && 
+                        hex1.sides[s1] !== 'none' && hex1.sides[s1] === hex2.sides[s2]) {
+                        const pos1 = positions[p1]; 
+                        const pos2 = positions[p2];
+                        
+                        // Get midpoints using the getSideMidpoint function
+                        const mid1 = getSideMidpoint(size, s1);
+                        const mid2 = getSideMidpoint(size, s2);
+                        
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', pos1.x + mid1.x);
+                        line.setAttribute('y1', pos1.y + mid1.y);
+                        line.setAttribute('x2', pos2.x + mid2.x);
+                        line.setAttribute('y2', pos2.y + mid2.y);
+                        line.setAttribute('stroke', colorMap[hex1.sides[s1]]);
+                        line.setAttribute('stroke-width', '3');
+                        line.setAttribute('stroke-linecap', 'round');
+                        line.setAttribute('opacity', '0.8');
+                        mainSvg.appendChild(line);
+                    }
+                });
+                
+                // Add hexagons on top of connections
+                for (const key in arrangement) {
+                    const hexagon = arrangement[key]; 
+                    const pos = positions[key];
+                    if (hexagon && pos) { 
+                        const svgHexagon = createHexagonSVG(pos.x, pos.y, size, hexagon);
+                        mainSvg.appendChild(svgHexagon);
+                    }
+                }
+                
+                // Replace the canvas with SVG
+                canvas.style.display = 'none';
+                layoutContainer.appendChild(mainSvg);
             }
+        }
+
+        // --- ToyZ Database Integration ---
+        let selectedToyZ = null;
+        let currentLevel = 0;
+        
+        function searchToyZ(query) {
+            if (!query || query.length < 2) return [];
+            
+            // Use TOYZ_DATABASE.toyz from the imported database
+            if (typeof TOYZ_DATABASE === 'undefined') {
+                console.error('TOYZ_DATABASE not found - make sure toyz-data.js is loaded');
+                return [];
+            }
+            
+            return TOYZ_DATABASE.toyz.filter(toyZ => 
+                toyZ.name.toLowerCase().includes(query.toLowerCase())
+            ).slice(0, 10); // Limit to 10 results
+        }
+        
+        function displayToyZSuggestions(suggestions) {
+            const suggestionsEl = document.getElementById('toyz-suggestions');
+            suggestionsEl.innerHTML = '';
+            
+            if (suggestions.length === 0) {
+                suggestionsEl.style.display = 'none';
+                return;
+            }
+            
+            suggestions.forEach(toyZ => {
+                const suggestionDiv = document.createElement('div');
+                suggestionDiv.className = 'p-2 hover:bg-gray-700 cursor-pointer border-b border-gray-600 last:border-b-0';
+                
+                const mappedElement = elementMapping[toyZ.element] || toyZ.element.toLowerCase();
+                const elementColor = elementColors[mappedElement] || '#ffffff';
+                
+                suggestionDiv.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        ${toyZ.icon ? `<img src="${toyZ.icon}" class="w-8 h-8 rounded" alt="${toyZ.name}">` : '<div class="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">?</div>'}
+                        <div>
+                            <div class="font-semibold text-white">${toyZ.name}</div>
+                            <div class="text-sm text-gray-400">${toyZ.rarity} • <span style="color: ${elementColor}">${toyZ.element}</span></div>
+                        </div>
+                    </div>
+                `;
+                
+                suggestionDiv.addEventListener('click', () => {
+                    selectToyZ(toyZ);
+                });
+                
+                suggestionsEl.appendChild(suggestionDiv);
+            });
+            
+            suggestionsEl.style.display = 'block';
+        }
+        
+        function selectToyZ(toyZ) {
+            selectedToyZ = toyZ;
+            document.getElementById('toyz-search').value = toyZ.name;
+            document.getElementById('manual-entry').style.display = 'none';
+            document.getElementById('toyz-suggestions').style.display = 'none'; // Close autocomplete
+            
+            // Auto-fill label, rarity, element and ID fields
+            document.getElementById('new-hex-label').value = toyZ.name;
+            document.getElementById('new-hex-rarity').value = toyZ.rarity.toLowerCase();
+            const mappedElement = elementMapping[toyZ.element] || toyZ.element.toLowerCase();
+            document.getElementById('new-hex-element').value = mappedElement;
+            document.getElementById('new-hex-id').value = getNextId();
+        }
+        
+        
+        function updateToyZBuffsDisplay() {
+            if (!selectedToyZ) return;
+            
+            const buffsEl = document.getElementById('toyz-buffs');
+            const level = parseInt(document.getElementById('toyz-level').value);
+            
+            let buffsHTML = '<strong>Active Buffs:</strong><br>';
+            
+            if (level === 0) {
+                buffsHTML += '<span class="text-gray-500">No buffs active at level 0</span>';
+            } else {
+                const activeBuffs = getActiveBuffs(selectedToyZ, level);
+                if (activeBuffs.length === 0) {
+                    buffsHTML += '<span class="text-gray-500">No buffs available</span>';
+                } else {
+                    activeBuffs.forEach((buff, index) => {
+                        buffsHTML += `<div class="text-green-400">• ${buff.name}: +${buff.value}${buff.isPercentage ? '%' : ''}</div>`;
+                    });
+                }
+            }
+            
+            buffsEl.innerHTML = buffsHTML;
+        }
+        
+        function getActiveBuffs(toyZ, level) {
+            const buffs = [];
+            // Correct buff availability: 1st buff at level 0+, 2nd buff at level 2+, 3rd buff at level 4+, 4th buff at level 6+
+            const numBuffs = level >= 6 ? 4 :
+                           level >= 4 ? 3 : 
+                           level >= 2 ? 2 : 
+                           level >= 0 ? 1 : 0;
+            
+            if (toyZ && toyZ.buffs && toyZ.buffs.length > 0) {
+                // Use the new database structure where buffs is an array
+                for (let i = 0; i < Math.min(numBuffs, toyZ.buffs.length); i++) {
+                    const buff = toyZ.buffs[i];
+                    buffs.push({
+                        name: buff.type,
+                        value: buff.value,
+                        isPercentage: buff.type === 'Crit %' || buff.type === 'Atk Spd' // These are percentage buffs
+                    });
+                }
+            }
+            
+            return buffs;
+        }
+        
+        function clearToyZSelection() {
+            selectedToyZ = null;
+            editingToyZ = null;
+            document.getElementById('toyz-search').value = '';
+            document.getElementById('toyz-suggestions').style.display = 'none';
+            document.getElementById('manual-entry').style.display = 'none'; // Hide manual entry when clearing
+            
+            // Reset form fields
+            document.getElementById('new-hex-label').value = '';
+            document.getElementById('new-hex-rarity').value = document.getElementById('new-hex-rarity').options[0].value;
+            document.getElementById('new-hex-element').value = document.getElementById('new-hex-element').options[0].value;
+            document.getElementById('toyz-level').value = '0';
+            
+            // Reset all side selectors to their first option
+            const sideSelectors = document.querySelectorAll('#new-hex-sides select');
+            sideSelectors.forEach(selector => {
+                selector.value = selector.options[0].value;
+            });
+            
+            // Reset button states
+            document.getElementById('add-shape-button').style.display = 'inline-block';
+            document.getElementById('update-shape-button').style.display = 'none';
+            
+            // Always get a fresh new ID when clearing
+            document.getElementById('new-hex-id').value = getNextId();
+        }
+        
+        function getAllPossibleBuffTypes() {
+            if (typeof TOYZ_DATABASE === 'undefined') {
+                // Fallback list if database is not available
+                return ['ATK', 'DEF', 'HP', 'Crit %', 'Atk Spd', 'Basic Damage', 'Boss Damage', 'Skill Damage', 'All Damage', 'Crit Damage'];
+            }
+            
+            const buffTypes = new Set();
+            TOYZ_DATABASE.toyz.forEach(toyZ => {
+                if (toyZ.buffs && Array.isArray(toyZ.buffs)) {
+                    toyZ.buffs.forEach(buff => {
+                        if (buff.type) {
+                            buffTypes.add(buff.type);
+                        }
+                    });
+                }
+            });
+            
+            return Array.from(buffTypes).sort();
+        }
+        
+        function setupManualBuffInputs() {
+            const buffInputsContainer = document.getElementById('buff-inputs');
+            const buffTypes = getAllPossibleBuffTypes();
+            const currentLevel = parseInt(document.getElementById('toyz-level').value);
+            
+            // Clear existing inputs
+            buffInputsContainer.innerHTML = '';
+            
+            // Create 4 buff input rows
+            for (let i = 1; i <= 4; i++) {
+                const buffRow = document.createElement('div');
+                buffRow.className = 'flex items-center gap-3';
+                buffRow.id = `buff-row-${i}`;
+                
+                // Determine if this buff should be enabled based on level
+                const isEnabled = (i === 1 && currentLevel >= 0) || 
+                                (i === 2 && currentLevel >= 2) || 
+                                (i === 3 && currentLevel >= 4) || 
+                                (i === 4 && currentLevel >= 6);
+                
+                // Buff number label
+                const label = document.createElement('span');
+                label.className = `text-sm font-medium ${isEnabled ? 'text-gray-300' : 'text-gray-500'} min-w-[60px]`;
+                label.textContent = `Buff ${i}:`;
+                buffRow.appendChild(label);
+                
+                // Buff type selector
+                const typeSelect = document.createElement('select');
+                typeSelect.id = `buff-type-${i}`;
+                typeSelect.className = 'bg-gray-700 border border-gray-600 text-white rounded-md p-2 text-sm flex-1';
+                typeSelect.disabled = !isEnabled;
+                
+                // Add empty option
+                const emptyOption = document.createElement('option');
+                emptyOption.value = '';
+                emptyOption.textContent = isEnabled ? 'Select buff type...' : 'Not available at this level';
+                typeSelect.appendChild(emptyOption);
+                
+                // Add buff type options
+                if (isEnabled) {
+                    buffTypes.forEach(buffType => {
+                        const option = document.createElement('option');
+                        option.value = buffType;
+                        option.textContent = buffType;
+                        typeSelect.appendChild(option);
+                    });
+                }
+                
+                buffRow.appendChild(typeSelect);
+                
+                // Buff value input
+                const valueInput = document.createElement('input');
+                valueInput.type = 'number';
+                valueInput.id = `buff-value-${i}`;
+                valueInput.className = 'bg-gray-700 border border-gray-600 text-white rounded-md p-2 text-sm w-20';
+                valueInput.placeholder = isEnabled ? 'Value' : 'N/A';
+                valueInput.disabled = !isEnabled;
+                valueInput.min = '0';
+                valueInput.step = '1';
+                
+                buffRow.appendChild(valueInput);
+                
+                buffInputsContainer.appendChild(buffRow);
+            }
+        }
+        
+        function getSidesFromForm() {
+            // Get the sides from the form selectors
+            return Array.from(document.querySelectorAll('#new-hex-sides select')).map(s => s.value);
+        }
+        
+        function generateSidesFromToyZ(toyZ, level) {
+            // For now, generate random sides based on element/rarity
+            // This could be enhanced with actual ToyZ side patterns if available
+            const colors = Object.keys(colorMap).filter(c => c !== 'none');
+            const sides = [];
+            
+            // Higher rarity = more matching colors
+            const rarityBonus = {
+                'Common': 0,
+                'Rare': 1, 
+                'Epic': 2,
+                'Legendary': 3,
+                'Mythic': 4
+            };
+            
+            const bonus = rarityBonus[toyZ.rarity] || 0;
+            const baseColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            for (let i = 0; i < 6; i++) {
+                if (Math.random() < 0.3 + (bonus * 0.1)) {
+                    sides.push(baseColor);
+                } else {
+                    sides.push(colors[Math.floor(Math.random() * colors.length)]);
+                }
+            }
+            
+            return sides;
         }
 
         // --- UI Helper Functions ---
         let hexagonObjects = [];  // All hexagon objects
         let selectedPoolIds = new Set();  // Shapes in the selected pool
         let tempSelectedIds = new Set();  // Temporarily selected shapes for transfer
+        let editingToyZ = null;  // Currently editing ToyZ
+        
+        function getNextId() {
+            return hexagonObjects.length > 0 ? Math.max(...hexagonObjects.map(h => h.id)) + 1 : 1;
+        }
         
         function showToast(message, type = 'info', duration = 3000) {
             const toastContainer = document.getElementById('toast-container');
@@ -1367,7 +2195,17 @@
                 const savedHexagons = localStorage.getItem('hexagonPool');
                 if (savedHexagons) {
                     const parsedHexagons = JSON.parse(savedHexagons);
-                    return parsedHexagons.map(h => new Hexagon(h.id, h.label, h.rarity, h.sides, h.element));
+                    return parsedHexagons.map(h => {
+                        const hex = new Hexagon(h.id, h.label, h.rarity, h.sides, h.element);
+                        // Preserve ToyZ data if it exists
+                        if (h.toyzData) {
+                            hex.toyzData = h.toyzData;
+                        }
+                        if (h.toyzLevel !== undefined) {
+                            hex.toyzLevel = h.toyzLevel;
+                        }
+                        return hex;
+                    });
                 }
                 return [];
             }
@@ -1393,7 +2231,16 @@
                     pieceCount = selectedPool.length;
                     numToChoose = Math.min(slotsToFill, pieceCount);
                     
-                    // Allow solving with less than 7 pieces - empty slots will be added
+                    // Special case: if only 1 ToyZ selected, force center placement
+                    if (selectedCount === 1) {
+                        estimationEl.textContent = `Single ToyZ will be placed in center position.`;
+                        solveError.style.display = 'none';
+                        solveBtn.disabled = false;
+                        solveHint.textContent = 'This will place your single ToyZ in the optimal center position.';
+                        return;
+                    }
+                    
+                    // Always allow solving - empty slots will be added automatically if needed
                     if (pieceCount < slotsToFill) {
                          estimationEl.textContent = `Note: Only ${pieceCount} shape(s) selected. ${slotsToFill - pieceCount} slot(s) will remain empty.`;
                          solveError.style.display = 'none';
@@ -1404,6 +2251,13 @@
                          return;
                     }
 
+                    // Normal case with enough pieces
+                    solveBtn.disabled = false;
+                    solveError.style.display = 'none';
+                    solveHint.textContent = 'This will start the search for the best arrangement using shapes from the selected pool.';
+                    const totalSecondsStr = estimateTime(pieceCount, numToChoose);
+                    estimationEl.textContent = `Estimated time: ${formatSeconds(totalSecondsStr)}`;
+
                 } else {
                     // No shapes in selected pool - cannot solve
                     estimationEl.textContent = '';
@@ -1413,12 +2267,6 @@
                     solveHint.textContent = 'Move shapes to the selected pool to enable solving.';
                     return;
                 }
-
-                solveBtn.disabled = false;
-                solveError.style.display = 'none';
-                solveHint.textContent = 'This will start the search for the best arrangement using shapes from the selected pool.';
-                const totalSecondsStr = estimateTime(pieceCount, numToChoose);
-                estimationEl.textContent = `Estimated time: ${formatSeconds(totalSecondsStr)}`;
             }
 
             function setupInitialData() {
@@ -1474,9 +2322,6 @@
                 addHexagon();
             }
 
-            function getNextId() {
-                return hexagonObjects.length > 0 ? Math.max(...hexagonObjects.map(h => h.id)) + 1 : 1;
-            }
 
             function populateAddShapeForm() {
                 document.getElementById('new-hex-id').value = getNextId();
@@ -1559,15 +2404,25 @@
                         hexContainer.classList.add('selected');
                     }
 
-                    const canvas = document.createElement('canvas');
-                    canvas.width = shapeSize;
-                    canvas.height = shapeSize;
-                    canvas.className = 'rounded-lg border-2 cursor-pointer';
-                    canvas.style.borderColor = rarityColor[hex.rarity] || '#374151';
-                    const ctx = canvas.getContext('2d');
-                    drawHexagon(ctx, centerPos, centerPos, hexSize, hex);
-
-                    canvas.addEventListener('click', () => {
+                    // Create SVG instead of canvas for shape pool items
+                    const svgContainer = document.createElement('div');
+                    svgContainer.className = 'relative';
+                    svgContainer.style.width = `${shapeSize}px`;
+                    svgContainer.style.height = `${shapeSize}px`;
+                    
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('width', shapeSize);
+                    svg.setAttribute('height', shapeSize);
+                    svg.className = 'rounded-lg border-2 cursor-pointer';
+                    svg.style.borderColor = rarityColor[hex.rarity] || '#374151';
+                    
+                    // Create the hexagon SVG group
+                    const hexagonSVG = createHexagonSVG(centerPos, centerPos, hexSize, hex);
+                    svg.appendChild(hexagonSVG);
+                    
+                    svgContainer.appendChild(svg);
+                    
+                    svgContainer.addEventListener('click', () => {
                         // Toggle selection for transfer
                         if (tempSelectedIds.has(hex.id)) {
                             tempSelectedIds.delete(hex.id);
@@ -1576,6 +2431,9 @@
                             tempSelectedIds.add(hex.id);
                             hexContainer.classList.add('selected');
                         }
+                        
+                        // Update editing form if any ToyZ are selected
+                        updateEditingForm();
                     });
 
                     const deleteBtn = document.createElement('button');
@@ -1588,7 +2446,9 @@
                         }
                     };
                     
-                    hexContainer.appendChild(canvas);
+                    // Note: ToyZ with icons don't need HTML overlays since the SVG already contains the icon and text
+                    
+                    hexContainer.appendChild(svgContainer);
                     hexContainer.appendChild(deleteBtn);
                     
                     // Add to appropriate pool
@@ -1619,7 +2479,342 @@
                 }
             }
 
-            addShapeBtn.addEventListener('click', addHexagon);
+            // ToyZ autocomplete event listeners
+            document.getElementById('toyz-search').addEventListener('input', (e) => {
+                const query = e.target.value;
+                const suggestions = searchToyZ(query);
+                displayToyZSuggestions(suggestions);
+            });
+            
+            // Manual label input listener
+            document.getElementById('new-hex-label').addEventListener('input', (e) => {
+                const hasText = e.target.value.trim().length > 0;
+                const manualEntry = document.getElementById('manual-entry');
+                
+                // Only show manual entry if there's text AND no ToyZ is selected from database
+                if (hasText && !selectedToyZ) {
+                    // Show manual entry fields when typing directly in label (not from database)
+                    manualEntry.style.display = 'block';
+                    setupManualBuffInputs();
+                    // Auto-set ID for manual entry
+                    if (!document.getElementById('new-hex-id').value) {
+                        document.getElementById('new-hex-id').value = getNextId();
+                    }
+                } else if (!hasText || selectedToyZ) {
+                    // Hide manual entry fields when label is empty OR when ToyZ is selected
+                    manualEntry.style.display = 'none';
+                }
+            });
+            
+            // Level change listener to update buff availability
+            document.getElementById('toyz-level').addEventListener('change', () => {
+                if (document.getElementById('manual-entry').style.display !== 'none') {
+                    setupManualBuffInputs();
+                }
+            });
+            
+            
+            document.getElementById('clear-selection').addEventListener('click', () => {
+                clearToyZSelection();
+            });
+            
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#toyz-search') && !e.target.closest('#toyz-suggestions')) {
+                    document.getElementById('toyz-suggestions').style.display = 'none';
+                }
+            });
+            
+            // Modified addHexagon function to handle ToyZ data
+            function addToyZHexagon() {
+                if (selectedToyZ) {
+                    // Add from ToyZ database - use sides from form
+                    const id = parseInt(document.getElementById('new-hex-id').value, 10);
+                    const level = parseInt(document.getElementById('toyz-level').value);
+                    const sides = getSidesFromForm(); // Use user-selected sides
+                    const mappedElement = elementMapping[selectedToyZ.element] || selectedToyZ.element.toLowerCase();
+                    
+                    const newHex = new Hexagon(
+                        id,
+                        selectedToyZ.name,
+                        selectedToyZ.rarity.toLowerCase(),
+                        sides,
+                        mappedElement
+                    );
+                    
+                    // Store ToyZ info for potential buff calculations later
+                    newHex.toyzData = selectedToyZ;
+                    newHex.toyzLevel = level; // Store actual level (first buff available at level 0)
+                        
+                    hexagonObjects.push(newHex);
+                    saveHexagonsToStorage();
+                    populateDropdowns();
+                    updateShapePools();
+                    updateEstimationText();
+                    updatePoolCounters();
+                    
+                    showToast(`Added ${selectedToyZ.name} (Level ${level}) to collection!`, 'success');
+                    
+                    // Clear form and reset state
+                    selectedToyZ = null;
+                    document.getElementById('toyz-search').value = '';
+                    document.getElementById('new-hex-label').value = '';
+                    document.getElementById('new-hex-id').value = getNextId();
+                    document.getElementById('toyz-suggestions').style.display = 'none';
+                    // Ensure manual entry stays hidden for database ToyZ
+                    document.getElementById('manual-entry').style.display = 'none';
+                } else {
+                    // Check if this is a manual custom ToyZ with buffs
+                    const manualEntry = document.getElementById('manual-entry');
+                    const isManualEntry = manualEntry.style.display !== 'none';
+                    
+                    if (isManualEntry) {
+                        // Add custom ToyZ with manual buffs
+                        addCustomToyZHexagon();
+                    } else {
+                        // Add regular manually entered hexagon
+                        addHexagon();
+                    }
+                }
+            }
+            
+            function addCustomToyZHexagon() {
+                const id = parseInt(document.getElementById('new-hex-id').value, 10);
+                const label = document.getElementById('new-hex-label').value;
+                const rarity = document.getElementById('new-hex-rarity').value;
+                const element = document.getElementById('new-hex-element').value;
+                const level = parseInt(document.getElementById('toyz-level').value);
+                const sides = Array.from(document.querySelectorAll('#new-hex-sides select')).map(s => s.value);
+
+                if (!label || !rarity) {
+                    showToast('Please fill all required fields for the custom ToyZ.', 'warning');
+                    return;
+                }
+
+                // Collect manual buffs
+                const customBuffs = [];
+                for (let i = 1; i <= 4; i++) {
+                    const typeSelect = document.getElementById(`buff-type-${i}`);
+                    const valueInput = document.getElementById(`buff-value-${i}`);
+                    
+                    if (typeSelect && valueInput && !typeSelect.disabled && typeSelect.value && valueInput.value) {
+                        customBuffs.push({
+                            type: typeSelect.value,
+                            value: parseInt(valueInput.value)
+                        });
+                    }
+                }
+
+                const newHex = new Hexagon(id, label, rarity, sides, element);
+                
+                // Create custom ToyZ data structure
+                const customToyZData = {
+                    name: label,
+                    rarity: rarity.charAt(0).toUpperCase() + rarity.slice(1),
+                    element: element.charAt(0).toUpperCase() + element.slice(1),
+                    buffs: customBuffs,
+                    icon: null // No icon for custom ToyZ
+                };
+                
+                // Store custom ToyZ info
+                newHex.toyzData = customToyZData;
+                newHex.toyzLevel = level;
+                
+                hexagonObjects.push(newHex);
+                saveHexagonsToStorage();
+                populateDropdowns();
+                updateShapePools();
+                updateEstimationText();
+                updatePoolCounters();
+                
+                // Clear form
+                document.getElementById('new-hex-label').value = '';
+                document.getElementById('new-hex-id').value = getNextId();
+                document.getElementById('manual-entry').style.display = 'none';
+                
+                const buffSummary = customBuffs.length > 0 ? ` with ${customBuffs.length} buff(s)` : '';
+                showToast(`Added custom ToyZ "${label}" (Level ${level})${buffSummary} to collection!`, 'success');
+            }
+            
+            function updateEditingForm() {
+                // Get the last selected ToyZ for editing
+                if (tempSelectedIds.size === 0) {
+                    // No selection - clear editing state
+                    if (editingToyZ) {
+                        clearToyZSelection();
+                    }
+                    return;
+                }
+                
+                // Get the last selected ToyZ (most recently clicked)
+                const selectedIds = Array.from(tempSelectedIds);
+                const lastSelectedId = selectedIds[selectedIds.length - 1];
+                const toyZToEdit = hexagonObjects.find(h => h.id === lastSelectedId);
+                
+                if (!toyZToEdit) return;
+                
+                // Set editing state
+                editingToyZ = toyZToEdit;
+                selectedToyZ = null; // Clear database selection
+                
+                // Fill form with existing ToyZ data
+                document.getElementById('new-hex-id').value = toyZToEdit.id;
+                document.getElementById('new-hex-label').value = toyZToEdit.label;
+                document.getElementById('new-hex-rarity').value = toyZToEdit.rarity;
+                document.getElementById('new-hex-element').value = toyZToEdit.element;
+                
+                // Fill sides
+                const sideSelectors = document.querySelectorAll('#new-hex-sides select');
+                toyZToEdit.sides.forEach((side, index) => {
+                    if (sideSelectors[index]) {
+                        sideSelectors[index].value = side;
+                    }
+                });
+                
+                // Fill ToyZ level if available
+                if (toyZToEdit.toyzLevel !== undefined) {
+                    document.getElementById('toyz-level').value = toyZToEdit.toyzLevel;
+                }
+                
+                // Handle ToyZ data
+                if (toyZToEdit.toyzData) {
+                    // Check if this is a database ToyZ or custom ToyZ
+                    if (toyZToEdit.toyzData.icon) {
+                        // Database ToyZ - fill search field and hide manual entry
+                        document.getElementById('toyz-search').value = toyZToEdit.toyzData.name;
+                        selectedToyZ = toyZToEdit.toyzData;
+                        document.getElementById('manual-entry').style.display = 'none';
+                    } else {
+                        // Custom ToyZ - show manual entry and fill buffs
+                        document.getElementById('toyz-search').value = '';
+                        document.getElementById('manual-entry').style.display = 'block';
+                        setupManualBuffInputs();
+                        
+                        // Fill existing buffs
+                        if (toyZToEdit.toyzData.buffs && toyZToEdit.toyzData.buffs.length > 0) {
+                            toyZToEdit.toyzData.buffs.forEach((buff, index) => {
+                                const buffNum = index + 1;
+                                const typeSelect = document.getElementById(`buff-type-${buffNum}`);
+                                const valueInput = document.getElementById(`buff-value-${buffNum}`);
+                                
+                                if (typeSelect && !typeSelect.disabled && valueInput) {
+                                    typeSelect.value = buff.type;
+                                    valueInput.value = buff.value;
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    // Regular hexagon without ToyZ data
+                    document.getElementById('toyz-search').value = '';
+                    document.getElementById('manual-entry').style.display = 'none';
+                }
+                
+                // Show update button, hide add button
+                document.getElementById('add-shape-button').style.display = 'none';
+                document.getElementById('update-shape-button').style.display = 'inline-block';
+                
+                showToast(`Editing ToyZ: ${toyZToEdit.label} (ID: ${toyZToEdit.id})`, 'info');
+            }
+            
+            function updateToyZHexagon() {
+                if (!editingToyZ) {
+                    showToast('No ToyZ selected for editing.', 'warning');
+                    return;
+                }
+                
+                const id = parseInt(document.getElementById('new-hex-id').value, 10);
+                const label = document.getElementById('new-hex-label').value;
+                const rarity = document.getElementById('new-hex-rarity').value;
+                const element = document.getElementById('new-hex-element').value;
+                const level = parseInt(document.getElementById('toyz-level').value);
+                const sides = Array.from(document.querySelectorAll('#new-hex-sides select')).map(s => s.value);
+                
+                if (!label || !rarity) {
+                    showToast('Please fill all required fields for the ToyZ.', 'warning');
+                    return;
+                }
+                
+                // Find and update the existing hexagon
+                const index = hexagonObjects.findIndex(h => h.id === editingToyZ.id);
+                if (index === -1) {
+                    showToast('Original ToyZ not found.', 'warning');
+                    return;
+                }
+                
+                // Update the hexagon
+                const updatedHex = new Hexagon(id, label, rarity, sides, element);
+                
+                if (selectedToyZ) {
+                    // Database ToyZ - preserve ToyZ data from database
+                    updatedHex.toyzData = selectedToyZ;
+                    updatedHex.toyzLevel = level;
+                } else {
+                    // Check if manual entry is visible (custom ToyZ)
+                    const manualEntry = document.getElementById('manual-entry');
+                    const isManualEntry = manualEntry.style.display !== 'none';
+                    
+                    if (isManualEntry) {
+                        // Custom ToyZ - collect manual buffs
+                        const customBuffs = [];
+                        for (let i = 1; i <= 4; i++) {
+                            const typeSelect = document.getElementById(`buff-type-${i}`);
+                            const valueInput = document.getElementById(`buff-value-${i}`);
+                            
+                            if (typeSelect && valueInput && !typeSelect.disabled && typeSelect.value && valueInput.value) {
+                                customBuffs.push({
+                                    type: typeSelect.value,
+                                    value: parseInt(valueInput.value)
+                                });
+                            }
+                        }
+                        
+                        // Create custom ToyZ data structure
+                        const customToyZData = {
+                            name: label,
+                            rarity: rarity.charAt(0).toUpperCase() + rarity.slice(1),
+                            element: element.charAt(0).toUpperCase() + element.slice(1),
+                            buffs: customBuffs,
+                            icon: null // No icon for custom ToyZ
+                        };
+                        
+                        updatedHex.toyzData = customToyZData;
+                        updatedHex.toyzLevel = level;
+                    } else if (editingToyZ.toyzData) {
+                        // Preserve existing ToyZ data if no new selection
+                        updatedHex.toyzData = editingToyZ.toyzData;
+                        updatedHex.toyzLevel = level;
+                    }
+                }
+                
+                // Replace the hexagon in the array
+                hexagonObjects[index] = updatedHex;
+                
+                // Update storage and UI
+                saveHexagonsToStorage();
+                populateDropdowns();
+                updateShapePools();
+                updateEstimationText();
+                updatePoolCounters();
+                
+                // Clear editing state
+                tempSelectedIds.clear();
+                editingToyZ = null;
+                selectedToyZ = null;
+                
+                // Reset form
+                document.getElementById('new-hex-label').value = '';
+                document.getElementById('new-hex-id').value = getNextId();
+                document.getElementById('toyz-search').value = '';
+                document.getElementById('manual-entry').style.display = 'none';
+                document.getElementById('add-shape-button').style.display = 'inline-block';
+                document.getElementById('update-shape-button').style.display = 'none';
+                
+                showToast(`Updated ToyZ: ${label} successfully!`, 'success');
+            }
+
+            addShapeBtn.addEventListener('click', addToyZHexagon);
+            document.getElementById('update-shape-button').addEventListener('click', updateToyZHexagon);
             addRandomShapeBtn.addEventListener('click', addRandomHexagon);
             selectEl.addEventListener('change', () => {
                 updateEstimationText();
@@ -1667,6 +2862,62 @@
                 populateDropdowns();  // Update center piece dropdown
                 updateEstimationText();
                 showToast('All Toyz returned to inventory!', 'success');
+            });
+            
+            // Delete all available Toyz functionality
+            const deleteAllAvailableBtn = document.getElementById('delete-all-available');
+            const deleteConfirmationModal = document.getElementById('delete-confirmation-modal');
+            const cancelDeleteBtn = document.getElementById('cancel-delete');
+            const confirmDeleteBtn = document.getElementById('confirm-delete');
+            
+            deleteAllAvailableBtn.addEventListener('click', () => {
+                // Show confirmation modal
+                deleteConfirmationModal.classList.remove('hidden');
+            });
+            
+            cancelDeleteBtn.addEventListener('click', () => {
+                // Hide confirmation modal
+                deleteConfirmationModal.classList.add('hidden');
+            });
+            
+            confirmDeleteBtn.addEventListener('click', () => {
+                // Delete all Toyz from available pool
+                const availableIds = hexagonObjects
+                    .filter(hex => !selectedPoolIds.has(hex.id))
+                    .map(hex => hex.id);
+                
+                // If there are no available Toyz, show message and close modal
+                if (availableIds.length === 0) {
+                    deleteConfirmationModal.classList.add('hidden');
+                    showToast('No Toyz in the available pool to delete.', 'warning');
+                    return;
+                }
+                
+                // Remove each Toyz from hexagonObjects
+                for (let i = hexagonObjects.length - 1; i >= 0; i--) {
+                    if (!selectedPoolIds.has(hexagonObjects[i].id)) {
+                        hexagonObjects.splice(i, 1);
+                    }
+                }
+                
+                tempSelectedIds.clear();
+                saveHexagonsToStorage();
+                updateShapePools();
+                populateDropdowns();
+                updateEstimationText();
+                updatePoolCounters();
+                document.getElementById('new-hex-id').value = getNextId();
+                
+                // Hide modal and show success message
+                deleteConfirmationModal.classList.add('hidden');
+                showToast(`Successfully deleted ${availableIds.length} Toyz from the available pool.`, 'success');
+            });
+            
+            // Close modal if user clicks outside of it
+            deleteConfirmationModal.addEventListener('click', (e) => {
+                if (e.target === deleteConfirmationModal) {
+                    deleteConfirmationModal.classList.add('hidden');
+                }
             });
 
             const colors = ['red', 'blue', 'purple', 'gray', 'yellow'];
@@ -1766,21 +3017,90 @@
 
                     gridLayoutContainer.appendChild(container);
 
-                    drawArrangement(canvas.getContext('2d'), layout.arrangement, 'Error');
+                    drawArrangement(canvas.getContext('2d'), layout.arrangement, 'Error', container);
                     
-                    let summaryHTML = '<div>';
-                    for (const color in layout.colorCounts) {
-                        if (layout.colorCounts[color] > 0) {
-                            summaryHTML += `<span class="inline-block mx-2" style="color:${colorMap[color]}">${color.charAt(0).toUpperCase() + color.slice(1)}: ${layout.colorCounts[color]}</span>`;
+                    // Recalculate layout data including buffs for this specific layout
+                    const layoutData = calculateArrangementScore(layout.arrangement);
+                    
+                    let summaryHTML = '';
+                    
+                    // Add buff summary (both ToyZ buffs and layout buffs from color matches)
+                    if (layoutData.buffSummary && Object.keys(layoutData.buffSummary.buffTotals).length > 0) {
+                        summaryHTML += '<div class="mb-2 p-2 bg-gray-900 rounded text-xs">';
+                        summaryHTML += '<div class="font-semibold text-green-400 mb-1">Total Buffs:</div>';
+                        
+                        // Separate ToyZ buffs, layout buffs, and element buffs
+                        const toyzBuffs = {};
+                        const layoutBuffs = {};
+                        const elementBuffs = {};
+                        
+                        for (const buffName in layoutData.buffSummary.buffTotals) {
+                            const buff = layoutData.buffSummary.buffTotals[buffName];
+                            if (buffName.includes('(Layout)')) {
+                                layoutBuffs[buffName] = buff;
+                            } else if (buffName.includes('(Element)')) {
+                                elementBuffs[buffName] = buff;
+                            } else {
+                                toyzBuffs[buffName] = buff;
+                            }
                         }
+                        
+                        // Show ToyZ buffs first
+                        if (Object.keys(toyzBuffs).length > 0) {
+                            summaryHTML += '<div class="text-yellow-300 text-xs mb-1">ToyZ Buffs:</div>';
+                            for (const buffName in toyzBuffs) {
+                                const buff = toyzBuffs[buffName];
+                                const formattedValue = Number(buff.value).toFixed(1).replace(/\.0$/, '');
+                                summaryHTML += `<div class="text-green-300 ml-1">• ${buffName}: +${formattedValue}% (from ${buff.count} ToyZ)</div>`;
+                            }
+                        }
+                        
+                        // Show layout buffs second
+                        if (Object.keys(layoutBuffs).length > 0) {
+                            summaryHTML += '<div class="text-blue-300 text-xs mb-1 mt-1">Layout Buffs:</div>';
+                            for (const buffName in layoutBuffs) {
+                                const buff = layoutBuffs[buffName];
+                                const cleanName = buffName.replace(' (Layout)', '');
+                                const formattedValue = Number(buff.value).toFixed(1).replace(/\.0$/, '');
+                                summaryHTML += `<div class="text-cyan-300 ml-1">• ${cleanName}: +${formattedValue}% (${buff.count} matches)</div>`;
+                            }
+                        }
+                        
+                        // Show element buffs third
+                        if (Object.keys(elementBuffs).length > 0) {
+                            summaryHTML += '<div class="text-purple-300 text-xs mb-1 mt-1">Element Bonuses:</div>';
+                            for (const buffName in elementBuffs) {
+                                const buff = elementBuffs[buffName];
+                                const cleanName = buffName.replace(' (Element)', '');
+                                const formattedValue = Number(buff.value).toFixed(0);
+                                summaryHTML += `<div class="text-purple-200 ml-1">• ${cleanName}: +${formattedValue}% (${buff.count} ToyZ)</div>`;
+                            }
+                        }
+                        
+                        summaryHTML += '</div>';
                     }
-                    summaryHTML += '</div><div class="mt-1">';
-                     for (const element in layout.elementCounts) {
-                        if (layout.elementCounts[element] > 0) {
-                            summaryHTML += `<span class="inline-block mx-2" style="color:${elementColors[element] || '#fff'}">${element.charAt(0).toUpperCase() + element.slice(1)}: ${layout.elementCounts[element]}</span>`;
+                    summaryHTML += '</div><div class="mt-1 flex flex-wrap items-center justify-center gap-2">';
+                     for (const element in layoutData.elementCounts) {
+                        if (layoutData.elementCounts[element] > 0) {
+                            // Find element key for database lookup
+                            const elementKey = Object.keys(elementMapping).find(key => 
+                                elementMapping[key] === element
+                            ) || element.charAt(0).toUpperCase() + element.slice(1);
+                            
+                            if (typeof TOYZ_DATABASE !== 'undefined' && TOYZ_DATABASE.elements && TOYZ_DATABASE.elements[elementKey]) {
+                                const elementData = TOYZ_DATABASE.elements[elementKey];
+                                summaryHTML += `<span class="inline-flex items-center gap-1 mx-1">`;
+                                summaryHTML += `<img src="${elementData.icon}" class="w-4 h-4" alt="${elementKey}" style="background-color: ${elementData.color || elementColors[element]}; border-radius: 2px; padding: 1px;">`;
+                                summaryHTML += `<span class="text-xs" style="color:${elementColors[element] || '#fff'}">${layoutData.elementCounts[element]}</span>`;
+                                summaryHTML += `</span>`;
+                            } else {
+                                // Fallback to text if element icon not available
+                                summaryHTML += `<span class="inline-block mx-2" style="color:${elementColors[element] || '#fff'}">${element.charAt(0).toUpperCase() + element.slice(1)}: ${layoutData.elementCounts[element]}</span>`;
+                            }
                         }
                     }
                     summaryHTML += '</div>';
+                    
                     summaryDiv.innerHTML = summaryHTML;
                 });
 
@@ -1859,7 +3179,7 @@
                 progressBar.style.width = '0%';
 
                 const selectedValue = selectEl.value;
-                const centerId = selectedValue === "any" ? null : parseInt(selectedValue, 10);
+                let centerId = selectedValue === "any" ? null : parseInt(selectedValue, 10);
                 const searchMode = document.querySelector('input[name="search-mode"]:checked').value;
 
                 const { uniqueHexagons, sidePatternGroups } = preprocessHexagons(hexagonObjects);
@@ -1867,6 +3187,23 @@
                 // Use only the shapes in the selected pool
                 let pool = uniqueHexagons.filter(h => selectedPoolIds.has(h.id));
                 const forcedIds = new Set();
+                
+                // Special handling for single ToyZ: force it to center
+                // Check if we only have one shape in the selected pool (before preprocessing)
+                const selectedShapesForSolving = hexagonObjects.filter(h => selectedPoolIds.has(h.id));
+                if (selectedShapesForSolving.length === 1 && !centerId) {
+                    const singleToyZ = selectedShapesForSolving[0];
+                    if (singleToyZ) {
+                        centerId = singleToyZ.id;
+                        // Make sure this ToyZ is in the pool for solving
+                        if (!pool.some(h => h.id === centerId)) {
+                            const centerHex = uniqueHexagons.find(h => h.id === centerId);
+                            if (centerHex) {
+                                pool = [centerHex]; // Pool should only contain the center piece for single ToyZ
+                            }
+                        }
+                    }
+                }
                 
                 // If a center piece is selected, ensure it's in the pool
                 if (centerId) {
@@ -1877,21 +3214,26 @@
                             pool.push(centerHex);
                         }
                     }
+                    // Don't remove center piece from pool - the solver expects it there
                 }
 
                 const estimationText1 = document.getElementById('estimation-text1');
                 
-                const totalSecondsStr = estimationText1.textContent.replace('Estimated time: ', '');
+                const totalSecondsStr = estimationText1.textContent.replace('Estimated time: ', '').replace('Single ToyZ will be placed in center position.', 'less than a second');
                 
                 const { score, arrangements: baseArrangements } = await findAllBestArrangements(pool, centerId, searchMode, (progress, count, total) => {
                     progressBar.style.width = `${progress * 100}%`;
-                    const remainingSecondsStr = multiplyBigInt(totalSecondsStr, Math.round((1 - progress) * 100));
-                    const finalSecondsStr = divideBigInt(remainingSecondsStr, 100).quotient;
-                    estimationText1.textContent = `Time remaining: ${formatSeconds(finalSecondsStr)}`;
-
-                    progressText.textContent = total > 0 
-                        ? `Checked ${count.toLocaleString()} / ${total.toLocaleString()} permutations...`
-                        : `Evaluated ${count.toLocaleString()} arrangements...`;
+                    if (selectedPoolIds.size === 1) {
+                        estimationText1.textContent = 'Placing single ToyZ in center...';
+                        progressText.textContent = 'Creating optimal single-ToyZ layout...';
+                    } else {
+                        const remainingSecondsStr = multiplyBigInt(totalSecondsStr, Math.round((1 - progress) * 100));
+                        const finalSecondsStr = divideBigInt(remainingSecondsStr, 100).quotient;
+                        estimationText1.textContent = `Time remaining: ${formatSeconds(finalSecondsStr)}`;
+                        progressText.textContent = total > 0 
+                            ? `Checked ${count.toLocaleString()} / ${total.toLocaleString()} permutations...`
+                            : `Evaluated ${count.toLocaleString()} arrangements...`;
+                    }
                 }, forcedIds);
                 
                 const arrangements = expandArrangements(baseArrangements, sidePatternGroups);
