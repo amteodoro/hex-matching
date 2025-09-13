@@ -1,0 +1,3339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-WNH50QZ2NX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+    
+      gtag('config', 'G-WNH50QZ2NX');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hexagon Puzzle Solver</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Pixel Heroes Adventure color palette */
+        :root {
+            --bg: #0a0a0a;
+            --bg-gradient: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            --panel: #151515;
+            --panel-alt: #1a1a1a;
+            --panel-border: #2a2a2a;
+            --text: #ffffff;
+            --muted: #888888;
+            --accent-green: #00ff88;
+            --accent-blue: #00aaff;
+            --accent-purple: #aa77ff;
+            --danger: #ff4444;
+            --danger-hover: #ff6666;
+            --success: #00ff88;
+            --outline: #000000;
+            --glow-green: rgba(0, 255, 136, 0.5);
+            --glow-blue: rgba(0, 170, 255, 0.5);
+            --glow-purple: rgba(170, 119, 255, 0.5);
+            --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+        
+        /* Base styles */
+        body {
+            font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            color: var(--text);
+            margin: 0;
+            padding: 2rem 0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(170, 119, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 100%, rgba(0, 170, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            background: rgba(21, 21, 21, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            width: 95%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        canvas {
+            background: linear-gradient(145deg, #1a1a1a, #222222);
+            border-radius: 1rem;
+            margin-top: 1.5rem;
+            border: 2px solid var(--panel-border);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+            max-width: 100%;
+            height: auto;
+        }
+        
+        h1 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 2rem;
+            font-weight: 400;
+            background: linear-gradient(45deg, var(--accent-green), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px var(--glow-green);
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+        }
+        
+        h2 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.2rem;
+            color: var(--accent-blue);
+            text-shadow: 0 0 20px var(--glow-blue);
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        h3 {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9rem;
+            color: var(--accent-purple);
+            text-shadow: 0 0 15px var(--glow-purple);
+            margin-bottom: 1rem;
+        }
+        
+        p {
+            font-size: 0.875rem;
+            color: #aaaaaa;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #cccccc;
+            line-height: 1.4;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        #score, #score2 {
+            font-size: 1.25rem;
+            font-weight: 400;
+            background: linear-gradient(45deg, var(--accent-green), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-top: 1rem;
+            min-height: 2.25rem;
+            text-shadow: 0 0 20px var(--glow-green);
+        }
+        
+        #grid1-title {
+            color: var(--accent-blue);
+            text-shadow: 0 0 20px var(--glow-blue);
+            margin-bottom: 2rem !important;
+        }
+        
+        /* Card style sections */
+        #data-management,
+        #second-grid-container {
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid var(--panel-border);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(5px);
+            margin-bottom: 2rem;
+        }
+        
+        #add-shape-form {
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid var(--panel-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(5px);
+            margin-bottom: 1.5rem;
+        }
+        
+        #grid1-layouts .layout-container,
+        #grid2-layouts .layout-container {
+            background: linear-gradient(145deg, #1a1a1a, #222222);
+            border: 1px solid var(--panel-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        #grid1-layouts, #grid2-layouts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            justify-items: center;
+            width: 100%;
+            margin-top: 2rem;
+        }
+        
+        @media (min-width: 1024px) {
+            #grid1-layouts, #grid2-layouts {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        #hexagon-list {
+            background: rgba(26, 26, 26, 0.6);
+            border: 1px solid var(--panel-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(5px);
+        }
+        
+        /* Form controls */
+        select {
+            background: linear-gradient(145deg, #222222, #1a1a1a);
+            border: 1px solid var(--panel-border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 0.5rem;
+            font-family: 'Inter', system-ui, sans-serif;
+            font-size: 0.875rem;
+            line-height: 1.4;
+            transition: all 0.3s ease;
+            max-width: 100%;
+        }
+        input[type="text"], input[type="number"] {
+            background: linear-gradient(145deg, #222222, #1a1a1a);
+            border: 1px solid var(--panel-border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 0.5rem;
+            font-family: 'Inter', system-ui, sans-serif;
+            font-size: 0.875rem;
+            line-height: 1.4;
+            transition: all 0.3s ease;
+        }
+        select:focus, input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent-green);
+            box-shadow: 0 0 15px var(--glow-green);
+        }
+        select option {
+            background: var(--panel);
+            font-size: 0.875rem;
+            padding: 4px 8px;
+        }
+        input[type="radio"], input[type="checkbox"] {
+            accent-color: var(--accent-green);
+        }
+        
+        /* Buttons */
+        .container button {
+            background: linear-gradient(145deg, var(--accent-green), #00cc66);
+            border: none;
+            color: var(--bg);
+            font-family: 'Inter', system-ui, sans-serif;
+            font-weight: 600;
+            font-size: 0.875rem;
+            padding: 12px 24px;
+            border-radius: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+            line-height: 1.2;
+        }
+        .container button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+        .container button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.5);
+        }
+        .container button:hover:not(:disabled)::before {
+            width: 300px;
+            height: 300px;
+        }
+        .container button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        .container button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: linear-gradient(145deg, #444444, #333333);
+        }
+        
+        /* Special button variants */
+        button#solve-button, button#add-shape-button {
+            background: linear-gradient(145deg, var(--accent-blue), #0088cc);
+            box-shadow: 0 4px 15px rgba(0, 170, 255, 0.3);
+        }
+        button#solve-button:hover:not(:disabled), button#add-shape-button:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(0, 170, 255, 0.5);
+        }
+        
+        button#solve-second-grid-button {
+            background: linear-gradient(145deg, var(--accent-purple), #8844ff);
+            box-shadow: 0 4px 15px rgba(170, 119, 255, 0.3);
+        }
+        button#solve-second-grid-button:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(170, 119, 255, 0.5);
+        }
+        
+        /* Delete button */
+        .hex-container > button {
+            background: var(--danger) !important;
+            border: 1px solid var(--danger-hover) !important;
+            color: #fff !important;
+            width: 30px !important;
+            height: 30px !important;
+            font-size: 0.8rem !important;
+            padding: 0 !important;
+            box-shadow: 0 2px 8px rgba(255, 68, 68, 0.3) !important;
+        }
+        .hex-container > button:hover {
+            background: var(--danger-hover) !important;
+            box-shadow: 0 4px 12px rgba(255, 68, 68, 0.5) !important;
+        }
+        
+        /* Layout containers */
+        .layout-container {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .layout-container::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 1rem;
+            padding: 1px;
+            background: linear-gradient(45deg, transparent, var(--accent-purple), transparent);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .layout-container:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        .layout-container:hover::before {
+            opacity: 1;
+        }
+        .layout-container.selected {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px var(--glow-green);
+            border-color: var(--accent-green);
+        }
+        
+        /* Hexagon tiles */
+        #hexagon-list .hex-container {
+            position: relative;
+            flex: 0 0 auto;
+        }
+        #hexagon-list .hex-container canvas {
+            border: 2px solid var(--panel-border);
+            background: linear-gradient(145deg, #1a1a1a, #222222);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        #hexagon-list .hex-container:hover canvas {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        #hexagon-list .hex-container.selected canvas {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 25px var(--glow-green);
+            transform: scale(1.05) translateY(-3px);
+        }
+        
+        /* Progress bars */
+        #progress-container, #progress-container2 {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid var(--panel-border);
+            border-radius: 1rem;
+            overflow: hidden;
+            height: 12px !important;
+        }
+        #progress-bar, #progress-bar2 {
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)) !important;
+            height: 100% !important;
+            transition: width 0.3s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+        #progress-bar::after, #progress-bar2::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Text styles */
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+        .results-summary {
+            color: #aaaaaa;
+            font-style: italic;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+        }
+        #progress-text, #progress-text2,
+        #estimation-text1, #estimation-text2 {
+            color: #aaaaaa;
+            font-size: 0.875rem;
+        }
+        .text-yellow-400 {
+            color: var(--accent-green) !important;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--panel);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-purple);
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-blue);
+        }
+        
+        /* Pagination buttons */
+        #grid1-pagination, #grid2-pagination {
+            margin-top: 2rem;
+        }
+        #grid1-pagination button, #grid2-pagination button {
+            background: linear-gradient(145deg, var(--accent-purple), #8844ff) !important;
+            border: 1px solid var(--accent-purple) !important;
+            border-radius: 0.5rem !important;
+            font-size: 0.75rem !important;
+            padding: 8px 12px !important;
+            margin: 0 3px;
+            line-height: 1.2 !important;
+            color: white !important;
+            font-weight: 600 !important;
+        }
+        #grid1-pagination button:hover:not(:disabled), #grid2-pagination button:hover:not(:disabled) {
+            background: linear-gradient(145deg, var(--accent-blue), #0088cc) !important;
+            border-color: var(--accent-blue) !important;
+            box-shadow: 0 4px 12px rgba(0, 170, 255, 0.5) !important;
+            transform: translateY(-1px);
+        }
+        #grid1-pagination button.current-page {
+            background: linear-gradient(145deg, var(--accent-green), #00cc66) !important;
+            border-color: var(--accent-green) !important;
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.4) !important;
+        }
+        #grid1-pagination button:disabled {
+            opacity: 0.3 !important;
+        }
+        
+        /* Text utility classes */
+        .text-sm {
+            font-size: 0.875rem !important;
+            line-height: 1.4 !important;
+        }
+        .text-xs {
+            font-size: 0.75rem !important;
+            line-height: 1.3 !important;
+        }
+        .text-lg {
+            font-size: 1.125rem !important;
+        }
+        .text-xl {
+            font-size: 1.25rem !important;
+        }
+        
+        /* Radio button and checkbox styling improvements */
+        input[type="radio"], input[type="checkbox"] {
+            margin-right: 0.5rem;
+            transform: scale(1.2);
+        }
+        
+        /* Improve spacing for form elements */
+        .control-group label {
+            margin-bottom: 0.25rem;
+        }
+        
+        .control-group .flex {
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        /* Progress text styling */
+        #progress-text, #progress-text2 {
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        #estimation-text1, #estimation-text2 {
+            font-size: 0.875rem;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+        
+        /* Motion preferences */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            .container button:hover:not(:disabled) {
+                transform: none;
+            }
+            .layout-container:hover {
+                transform: none;
+            }
+            #hexagon-list .hex-container:hover canvas {
+                transform: none;
+            }
+        }
+        
+        /* Toast notification styles */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        .toast {
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border: 1px solid var(--panel-border);
+            border-radius: 0.5rem;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            pointer-events: auto;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .toast.warning {
+            border-color: var(--danger);
+            box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
+        }
+        .toast.success {
+            border-color: var(--accent-green);
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+        }
+        
+        /* Modal styles */
+        #delete-confirmation-modal {
+            backdrop-filter: blur(5px);
+            transition: opacity 0.3s ease;
+        }
+        #delete-confirmation-modal.hidden {
+            display: none;
+            opacity: 0;
+        }
+        #delete-confirmation-modal button {
+            transition: all 0.2s ease;
+        }
+        #delete-confirmation-modal button:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Shape pool styles */
+        .shape-pool-item {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .shape-pool-item:hover {
+            transform: scale(1.05);
+        }
+        .shape-pool-item.selected {
+            outline: 3px solid var(--accent-green);
+            outline-offset: 2px;
+        }
+        
+        /* Custom scrollbar for shape pools */
+        #available-shapes::-webkit-scrollbar,
+        #selected-shapes::-webkit-scrollbar {
+            width: 8px;
+        }
+        #available-shapes::-webkit-scrollbar-track,
+        #selected-shapes::-webkit-scrollbar-track {
+            background: rgba(42, 42, 42, 0.5);
+            border-radius: 4px;
+        }
+        #available-shapes::-webkit-scrollbar-thumb,
+        #selected-shapes::-webkit-scrollbar-thumb {
+            background: var(--accent-purple);
+            border-radius: 4px;
+        }
+        #available-shapes::-webkit-scrollbar-thumb:hover,
+        #selected-shapes::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-blue);
+        }
+        
+        /* Size slider styling */
+        #shape-size-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: linear-gradient(145deg, #222222, #1a1a1a);
+            border: 1px solid var(--panel-border);
+            border-radius: 3px;
+            outline: none;
+        }
+        #shape-size-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(145deg, var(--accent-green), #00cc66);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+        }
+        #shape-size-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px var(--glow-green);
+        }
+        #shape-size-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(145deg, var(--accent-green), #00cc66);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+            border: none;
+        }
+        #shape-size-slider::-moz-range-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px var(--glow-green);
+        }
+        
+        /* Hex container selection overlay */
+        #hexagon-list .hex-container::after {
+            content: '✓';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: var(--accent-green);
+            color: var(--bg);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        #hexagon-list .hex-container.selected::after {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+<!-- Toast notification container -->
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h2 class="text-xl font-bold text-red-500 mb-4">⚠️ Delete All Available Toyz</h2>
+            <p class="text-gray-300 mb-6">Are you sure you want to delete ALL Toyz from the Available pool? This action cannot be undone.</p>
+            <div class="flex justify-end gap-4">
+                <button id="cancel-delete" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md">Cancel</button>
+                <button id="confirm-delete" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">Delete All</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1 class="text-xl font-semibold">Pixel Heroes Adventure - Toyz Optimizer</h1>
+        <p>Maximize your hero's stats by finding the optimal Toyz arrangement in the 2-3-2 grid layout.</p>
+        <p class="text-xs text-gray-500 mt-1">Better Toyz arrangements = Higher stat boosts for your Pixel Heroes!</p>
+        
+
+        <div id="data-management" class="mt-8">
+            
+            <!-- Add Shape Form -->
+            <div id="add-shape-form" class="my-4 p-4 border border-gray-600 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-300 mb-2">Add a New Toyz</h3>
+                <p class="text-sm text-gray-500 mt-1 mb-4">Add your Toyz pieces to the collection. Each Toyz has different rarities and elements that affect your hero's power!</p>
+                
+                <!-- ToyZ Autocomplete Section -->
+                <div class="mb-4">
+                    <label for="toyz-search" class="block text-sm font-medium text-gray-400 mb-2">Search ToyZ Database</label>
+                    <div class="relative">
+                        <input type="text" id="toyz-search" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white" placeholder="Start typing ToyZ name..." autocomplete="off">
+                        <div id="toyz-suggestions" class="absolute z-50 w-full bg-gray-800 border border-gray-600 rounded-md mt-1 max-h-40 overflow-y-auto" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                
+                
+                <!-- Original Form Fields -->
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                    <div>
+                        <label for="new-hex-id" class="block text-sm font-medium text-gray-400">ID</label>
+                        <input type="number" id="new-hex-id" class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md p-2 text-white" disabled/>
+                    </div>
+                    <div>
+                        <label for="new-hex-label" class="block text-sm font-medium text-gray-400">Label</label>
+                        <input type="text" id="new-hex-label" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white"/>
+                    </div>
+                    <div>
+                        <label for="new-hex-rarity" class="block text-sm font-medium text-gray-400">Rarity</label>
+                        <select id="new-hex-rarity" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white"></select>
+                    </div>
+                    <div>
+                        <label for="toyz-level" class="block text-sm font-medium text-gray-400">Level</label>
+                        <select id="toyz-level" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white">
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="new-hex-element" class="block text-sm font-medium text-gray-400">Element</label>
+                        <select id="new-hex-element" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white"></select>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-400">Sides (Top-Left, Top-Right, Right, Bottom-Right, Bottom-Left, Left)</label>
+                    <div id="new-hex-sides" class="grid grid-cols-6 gap-2 mt-1"></div>
+                </div>
+                
+                <!-- Manual Entry Fields (for custom ToyZ) -->
+                <div id="manual-entry" style="display: none;">
+                    <!-- Dynamic Buff Input Fields -->
+                    <div id="dynamic-buff-fields" class="mt-4">
+                        <label class="block text-sm font-medium text-gray-400 mb-2">ToyZ Buffs (based on level)</label>
+                        <p class="text-xs text-gray-500 mb-3">Configure the buffs for your custom ToyZ. Buff availability depends on level: 1st buff at level 0+, 2nd at level 2+, 3rd at level 4+, 4th at level 6+.</p>
+                        <div id="buff-inputs" class="space-y-3"></div>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2 mt-4">
+                    <button id="add-shape-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Add ToyZ</button>
+                    <button id="update-shape-button" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-md" style="display: none;">Update ToyZ</button>
+                    <button id="add-random-shape-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Add Random ToyZ</button>
+                    <button id="clear-selection" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md">Clear Selection</button>
+                </div>
+            </div>
+
+            <h3 class="text-lg font-semibold text-gray-300">Toyz Collection</h3>
+            <p class="text-sm text-gray-500 mt-1 mb-3">Manage your Toyz inventory! Move Toyz to the selected pool to optimize their arrangement. The solver will maximize matching sides for the best stat multipliers.</p>
+            
+            <!-- Size slider control -->
+            <div class="flex items-center gap-4 mt-4 mb-4">
+                <label for="shape-size-slider" class="text-sm text-gray-400">Shape Size:</label>
+                <input type="range" id="shape-size-slider" min="80" max="200" value="140" class="flex-1 max-w-xs" />
+                <span id="shape-size-value" class="text-sm text-gray-400 min-w-[3rem]">140px</span>
+            </div>
+            
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- Available Shapes Pool -->
+                <div class="flex-1">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-md font-semibold text-gray-400">Available Toyz</h4>
+                        <span id="available-counter" class="text-sm text-gray-500">Count: 0</span>
+                    </div>
+                    <div id="available-shapes" class="flex flex-wrap justify-center gap-4 p-4 rounded-lg border border-gray-600 bg-gray-800/30 min-h-[200px] max-h-[400px] overflow-y-auto overflow-x-hidden"></div>
+                </div>
+                
+                <!-- Transfer Controls -->
+                <div class="flex flex-col justify-center items-center gap-4 my-auto">
+                    <button id="move-to-selected" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md flex items-center gap-2 w-32" title="Move selected Toyz to Selected Pool">
+                        <span class="text-lg">→</span>
+                        <span class="hidden lg:inline">Move</span>
+                    </button>
+                    <button id="move-all-to-selected" class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-md flex items-center gap-2 w-32" title="Move ALL Toyz to Selected Pool">
+                        <span class="text-lg">⇒</span>
+                        <span class="hidden lg:inline">Move All</span>
+                    </button>
+                    <button id="move-all-to-available" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-md flex items-center gap-2 w-32" title="Move ALL Toyz to Available Pool">
+                        <span class="text-lg">⇐</span>
+                        <span class="hidden lg:inline">Return All</span>
+                    </button>
+                    <button id="move-to-available" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md flex items-center gap-2 w-32" title="Move selected Toyz to Available Pool">
+                        <span class="text-lg">←</span>
+                        <span class="hidden lg:inline">Return</span>
+                    </button>
+                    <button id="delete-all-available" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md flex items-center gap-2 w-32" title="Delete ALL Toyz from Available Pool">
+                        <span class="text-lg">🗑️</span>
+                        <span class="hidden lg:inline">Delete All</span>
+                    </button>
+                </div>
+                
+                <!-- Selected Shapes Pool -->
+                <div class="flex-1">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-md font-semibold text-gray-400">Selected Toyz for Battle</h4>
+                        <span id="selected-counter" class="text-sm text-gray-500">Count: 0</span>
+                    </div>
+                    <div id="selected-shapes" class="flex flex-wrap justify-center gap-4 p-4 rounded-lg border border-gray-600 bg-gray-800/30 min-h-[200px] max-h-[400px] overflow-y-auto overflow-x-hidden"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="my-4 flex flex-col items-center justify-center gap-4">
+            <div class="control-group">
+                <label for="center-piece-select" class="mr-2 text-gray-400">Center Piece (M2):</label>
+                <select id="center-piece-select" class="bg-gray-700 border border-gray-600 text-white rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </select>
+                <p class="text-sm text-gray-500 mt-1">Lock your strongest Toyz in the center (M2) position for strategic placement!</p>
+            </div>
+            <div class="control-group flex flex-wrap items-center gap-4">
+                <span class="text-gray-400 text-sm">Search Mode:</span>
+                <label class="flex items-center text-sm"><input type="radio" name="search-mode" value="bestScore" checked class="form-radio h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500"> <span class="ml-2">Find Best Score</span></label>
+                <label class="flex items-center text-sm"><input type="radio" name="search-mode" value="stopAt12" class="form-radio h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500"> <span class="ml-2">Stop at 12</span></label>
+            </div>
+            <fieldset id="tiebreak-fieldset" class="control-group" disabled>
+                <span class="text-gray-400 text-sm">Tie-Breaking Strategy:</span>
+                <p class="text-sm text-gray-500 mt-1 mb-3">When multiple layouts share the same top score, this determines how they are sorted. You can prioritize by the total rarity of pieces, the number of matches of a specific color, or the number of pieces of a specific element.</p>
+                <div class="flex flex-wrap items-center justify-center gap-4 mt-2">
+                    <label class="flex items-center text-sm"><input type="radio" name="tiebreak-mode" value="rarity" checked class="form-radio h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500"> <span class="ml-2">Rarity</span></label>
+                    <label class="flex items-center text-sm"><input type="radio" name="tiebreak-mode" value="color" class="form-radio h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500"> <span class="ml-2">Color Priority</span></label>
+                    <label class="flex items-center text-sm"><input type="radio" name="tiebreak-mode" value="element" class="form-radio h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 focus:ring-blue-500"> <span class="ml-2">Element Priority</span></label>
+                </div>
+                <div id="color-priority-controls" class="control-group flex-wrap items-center justify-center gap-2 mt-2" style="display: none;">
+                    <!-- Color priority dropdowns will be added here -->
+                </div>
+                <div id="element-priority-controls" class="control-group flex-wrap items-center justify-center gap-2 mt-2" style="display: none;">
+                    <!-- Element priority dropdowns will be added here -->
+                </div>
+            </fieldset>
+            <button id="solve-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Optimize Toyz Layout</button>
+            <p id="solve-button-hint" class="text-sm text-gray-500 mt-1">Find the best Toyz arrangement to maximize your hero's stat boosts!</p>
+        </div>
+
+        <div id="progress-container" class="w-full bg-gray-600 rounded-full h-2.5 mt-4" style="display: none;">
+            <div id="progress-bar" class="bg-blue-500 h-2.5 rounded-full" style="width: 0%"></div>
+        </div>
+        <div id="progress-text" class="text-sm text-gray-400 mt-1" aria-live="polite"></div>
+        <div id="estimation-text1" class="text-sm text-gray-400 mt-1" aria-live="polite"></div>
+        <div id="solve-error" class="text-sm text-red-400 mt-1" style="display: none;" aria-live="assertive"></div>
+        <p class="text-xs text-yellow-400 mt-1">Note: The time estimation may be inaccurate for very large numbers of hexagons.</p>
+        
+        <div id="score"></div>
+        <div id="results-summary1" class="results-summary"></div>
+        <h2 id="grid1-title" class="text-xl font-semibold text-gray-300 mt-4" style="display: none;">Optimal Toyz Arrangements</h2>
+        <div id="grid1-layouts">
+        </div>
+        <div id="grid1-pagination" class="flex justify-center items-center mt-4"></div>
+        <div class="my-4">
+            <button id="solve-second-grid-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md" style="display: none;" disabled>Solve Second Grid</button>
+            <p id="solve-second-grid-hint" class="text-sm text-gray-500 mt-1" style="display: none;">After finding the first grid, select one of the resulting layouts above, then click here to find the best arrangement for a second grid using the remaining pieces.</p>
+        </div>
+
+        <div id="second-grid-container" class="mt-8" style="display: none;">
+             <div id="progress-container2" class="w-full bg-gray-600 rounded-full h-2.5 mt-4" style="display: none;">
+                <div id="progress-bar2" class="bg-blue-500 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+            <div id="progress-text2" class="text-sm text-gray-400 mt-1"></div>
+            <div id="estimation-text2" class="text-sm text-gray-400 mt-1"></div>
+             <div id="score2"></div>
+             <div id="results-summary2" class="results-summary"></div>
+             <div id="grid2-layouts">
+            </div>
+            <div id="grid2-pagination" class="flex justify-center items-center mt-4"></div>
+        </div>
+    </div>
+
+    <!-- Import ToyZ database -->
+    <script src="toyz-data.js"></script>
+    
+    <script>
+        // --- Core Puzzle Logic ---
+        const elements = ['normal', 'fire', 'water', 'wind', 'plant', 'ground', 'dark', 'light', 'ice', 'electric', 'poison'];
+        const elementColors = {
+            normal: '#A8A77A', fire: '#EE8130', water: '#6390F0', electric: '#F7D02C', plant: '#7AC74C',
+            ice: '#96D9D6', ground: '#E2BF65', dark: '#705746', light: '#F85888', wind: '#A98FF3', poison: '#A040A0'
+        };
+        
+        // Map game elements to display elements
+        const elementMapping = {
+            'Ground': 'ground',
+            'Normal': 'normal', 
+            'Fire': 'fire',
+            'Water': 'water', 
+            'Wind': 'wind',
+            'Plant': 'plant',
+            'Dark': 'dark',
+            'Light': 'light',
+            'Ice': 'ice',
+            'Electric': 'electric',
+            'Poison': 'poison'
+        };
+
+
+        class Hexagon {
+            constructor(id, label, rarity, sides, element) {
+                this.id = id;
+                this.label = label;
+                this.rarity = rarity;
+                this.sides = sides;
+                this.element = element;
+            }
+        }
+
+        // --- BigInt Arithmetic for Time Estimation ---
+        function multiplyBigInt(num1, num2) {
+            let a = num1.split('').reverse();
+            let b = String(num2).split('').reverse();
+            let result = [];
+
+            for (let i = 0; i < a.length; i++) {
+                for (let j = 0; j < b.length; j++) {
+                    let index = i + j;
+                    let product = a[i] * b[j];
+                    result[index] = result[index] ? result[index] + product : product;
+                }
+            }
+
+            for (let i = 0; i < result.length; i++) {
+                if (result[i] >= 10) {
+                    let carry = Math.floor(result[i] / 10);
+                    result[i] %= 10;
+                    result[i+1] = result[i+1] ? result[i+1] + carry : carry;
+                }
+            }
+            return result.reverse().join('');
+        }
+
+        function divideBigInt(dividendStr, divisor) {
+            let quotient = '';
+            let remainder = 0;
+            for (let i = 0; i < dividendStr.length; i++) {
+                remainder = remainder * 10 + parseInt(dividendStr[i]);
+                if (remainder >= divisor) {
+                    quotient += Math.floor(remainder / divisor);
+                    remainder %= divisor;
+                } else {
+                    if (quotient !== '') quotient += '0';
+                }
+            }
+            return { quotient: quotient === '' ? '0' : quotient, remainder };
+        }
+
+        function formatSeconds(secondsStr) {
+            if (secondsStr === '0') return 'less than a second';
+
+            const divBy60 = divideBigInt(secondsStr, 60);
+            const seconds = divBy60.remainder;
+            const totalMinutesStr = divBy60.quotient;
+            if (totalMinutesStr === '0') return `${seconds}s`;
+
+            const divMinutesBy60 = divideBigInt(totalMinutesStr, 60);
+            const minutes = divMinutesBy60.remainder;
+            const totalHoursStr = divMinutesBy60.quotient;
+            if (totalHoursStr === '0') return `${minutes}m ${seconds}s`;
+
+            const divHoursBy24 = divideBigInt(totalHoursStr, 24);
+            const hours = divHoursBy24.remainder;
+            const days = divHoursBy24.quotient;
+            if (days === '0') return `${hours}h ${minutes}m ${seconds}s`;
+            
+            return `${days}d ${hours}h ${minutes}m`;
+        }
+
+        function estimateTime(pieceCount, numToChoose) {
+            if (pieceCount < numToChoose) return '0';
+            let permutations = '1';
+            for (let i = 0; i < numToChoose; i++) {
+                permutations = multiplyBigInt(permutations, pieceCount - i);
+            }
+            const OPS_PER_SECOND = 500_000;
+            return divideBigInt(permutations, OPS_PER_SECOND).quotient;
+        }
+        
+        const rarityValue = { 'mythic': 5, 'legendary': 4, 'epic': 3, 'rare': 2, 'common': 1, 'none': 0 };
+
+        function calculateRarityScore(arrangement) {
+            return Object.values(arrangement).reduce((sum, hex) => sum + (rarityValue[hex.rarity] || 0), 0);
+        }
+
+        function calculateMatchScorePair(hex1, hex2, sideIndex1, sideIndex2) {
+            if (!hex1 || !hex2) return { score: 0, color: null };
+            const color1 = hex1.sides[sideIndex1];
+            const color2 = hex2.sides[sideIndex2];
+            if (color1 !== 'none' && color1 === color2) {
+                return { score: 1, color: color1 };
+            }
+            return { score: 0, color: null };
+        }
+
+        function calculateArrangementScore(p) {
+            let score = 0;
+            const colorCounts = { red: 0, blue: 0, purple: 0, gray: 0, yellow: 0 };
+            const elementCounts = Object.fromEntries(elements.map(e => [e, 0]));
+
+            Object.values(p).forEach(hex => {
+                if (hex && hex.element && elementCounts[hex.element] !== undefined) {
+                    elementCounts[hex.element]++;
+                }
+            });
+
+            // Side ordering: top-left (0), top-right (1), right (2), bottom-right (3), bottom-left (4), left (5)
+            const connections = [
+                // Horizontal connections (right to left)
+                { p1: 'T1', s1: 2, p2: 'T2', s2: 5 },  // T1 right to T2 left
+                { p1: 'M1', s1: 2, p2: 'M2', s2: 5 },  // M1 right to M2 left
+                { p1: 'M2', s1: 2, p2: 'M3', s2: 5 },  // M2 right to M3 left
+                { p1: 'B1', s1: 2, p2: 'B2', s2: 5 },  // B1 right to B2 left
+                
+                // Diagonal connections
+                { p1: 'M1', s1: 1, p2: 'T1', s2: 4 },  // M1 top-right to T1 bottom-left
+                { p1: 'T1', s1: 3, p2: 'M2', s2: 0 },  // T1 bottom-right to M2 top-left
+                { p1: 'T2', s1: 4, p2: 'M2', s2: 1 },  // T2 bottom-left to M2 top-right
+                { p1: 'T2', s1: 3, p2: 'M3', s2: 0 },  // T2 bottom-right to M3 top-left
+                { p1: 'M1', s1: 3, p2: 'B1', s2: 0 },  // M1 bottom-right to B1 top-left
+                { p1: 'M2', s1: 4, p2: 'B1', s2: 1 },  // M2 bottom-left to B1 top-right
+                { p1: 'M2', s1: 3, p2: 'B2', s2: 0 },  // M2 bottom-right to B2 top-left
+                { p1: 'M3', s1: 4, p2: 'B2', s2: 1 }   // M3 bottom-left to B2 top-right
+            ];
+            connections.forEach(({ p1, s1, p2, s2 }) => {
+                const match = calculateMatchScorePair(p[p1], p[p2], s1, s2);
+                if (match.score > 0) {
+                    score++;
+                    if (colorCounts[match.color] !== undefined) {
+                        colorCounts[match.color]++;
+                    }
+                }
+            });
+            
+            // Calculate buff summary with both ToyZ buffs and layout buffs
+            const buffSummary = calculateLayoutBuffs(p, colorCounts);
+            
+            return { score, colorCounts, elementCounts, buffSummary };
+        }
+        
+        function calculateLayoutBuffs(arrangement, colorCounts = null) {
+            const buffTotals = {};
+            const toyzInLayout = [];
+            
+            // Add ToyZ buffs (including level 0)
+            Object.values(arrangement).forEach(hex => {
+                if (hex && hex.toyzData && hex.toyzLevel !== undefined) {
+                    const level = hex.toyzLevel;
+                    toyzInLayout.push({ toyZ: hex.toyzData, level: level, name: hex.label });
+                    const activeBuffs = getActiveBuffs(hex.toyzData, level);
+                    
+                    activeBuffs.forEach(buff => {
+                        if (!buffTotals[buff.name]) {
+                            buffTotals[buff.name] = {
+                                value: 0,
+                                isPercentage: buff.isPercentage,
+                                count: 0
+                            };
+                        }
+                        buffTotals[buff.name].value += buff.value;
+                        buffTotals[buff.name].count += 1;
+                    });
+                }
+            });
+            
+            // Add layout buffs from color matches with bonus for 4+ matches
+            if (colorCounts) {
+                const colorToBuffMapping = {
+                    'gray': { name: 'Basic Damage', baseValue: 3, bonusValue: 2 },
+                    'red': { name: 'Boss Damage', baseValue: 2, bonusValue: 1 },
+                    'yellow': { name: 'Skill Damage', baseValue: 2, bonusValue: 1 },
+                    'blue': { name: 'All Damage', baseValue: 2, bonusValue: 1 },
+                    'purple': { name: 'Crit Damage', baseValue: 2, bonusValue: 1 }
+                };
+                
+                Object.entries(colorCounts).forEach(([color, count]) => {
+                    if (count > 0 && colorToBuffMapping[color]) {
+                        const buffInfo = colorToBuffMapping[color];
+                        const buffName = `${buffInfo.name} (Layout)`;
+                        
+                        // Base buff value
+                        let buffValue = buffInfo.baseValue * count;
+                        
+                        // Add bonus if 4 or more matches
+                        if (count >= 4) {
+                            buffValue += buffInfo.bonusValue;
+                        }
+                        
+                        if (!buffTotals[buffName]) {
+                            buffTotals[buffName] = {
+                                value: 0,
+                                isPercentage: true,
+                                count: 0
+                            };
+                        }
+                        buffTotals[buffName].value += buffValue;
+                        buffTotals[buffName].count += count;
+                    }
+                });
+            }
+            
+            // Add element damage buffs (3+ ToyZ of same element, excluding 'normal')
+            const elementCounts = {};
+            Object.values(arrangement).forEach(hex => {
+                if (hex && hex.element && hex.element !== 'normal' && hex.label !== 'empty') {
+                    if (!elementCounts[hex.element]) {
+                        elementCounts[hex.element] = 0;
+                    }
+                    elementCounts[hex.element]++;
+                }
+            });
+            
+            Object.entries(elementCounts).forEach(([element, count]) => {
+                if (count >= 3) {
+                    const elementName = element.charAt(0).toUpperCase() + element.slice(1);
+                    let buffValue = 0;
+                    
+                    if (count >= 7) {
+                        buffValue = 50;
+                    } else if (count >= 5) {
+                        buffValue = 25;
+                    } else if (count >= 3) {
+                        buffValue = 10;
+                    }
+                    
+                    const buffName = `${elementName} Damage (Element)`;
+                    buffTotals[buffName] = {
+                        value: buffValue,
+                        isPercentage: true,
+                        count: count
+                    };
+                }
+            });
+            
+            return { buffTotals, toyzInLayout };
+        }
+
+        async function findAllBestArrangements(hexagons, centerId, searchMode, onProgress, forcedHexagonIds = new Set()) {
+            let bestScore = -1;
+            let bestArrangements = [];
+            let processedCount = 0;
+            const CHUNK_SIZE = 50000;
+
+            const centerHex = centerId ? hexagons.find(h => h.id === centerId) : null;
+            
+            const slots = centerId 
+                ? ['T1', 'T2', 'M1', 'M3', 'B1', 'B2'] 
+                : ['T1', 'T2', 'M1', 'M2', 'M3', 'B1', 'B2'];
+            
+            let candidatePieces = hexagons.slice();
+            const totalSlots = slots.length;
+
+            // Special case: single ToyZ in center with all other slots empty
+            if (centerHex && hexagons.length === 1 && hexagons[0].id === centerId) {
+                // Create arrangement with only center piece and empty slots
+                const arrangement = { M2: centerHex };
+                const dummyHex = new Hexagon(0, 'empty', 'none', Array(6).fill('none'), 'none');
+                
+                // Fill all other slots with empty hexagons
+                slots.forEach((slot, index) => {
+                    arrangement[slot] = { ...dummyHex, id: `dummy-${slot}` };
+                });
+                
+                // Calculate score for this arrangement
+                const { score, colorCounts, elementCounts } = calculateArrangementScore(arrangement);
+                
+                onProgress(1, 1, 1);
+                return { 
+                    score, 
+                    arrangements: [{ arrangement, colorCounts, elementCounts }] 
+                };
+            }
+
+            if (candidatePieces.length < totalSlots) {
+                const dummyHex = new Hexagon(0, 'empty', 'none', Array(6).fill('none'), 'none');
+                const dummiesNeeded = totalSlots - candidatePieces.length;
+                for (let i = 0; i < dummiesNeeded; i++) {
+                    candidatePieces.push({ ...dummyHex, id: `dummy-${i}`});
+                }
+            }
+            
+            const totalForProgress = candidatePieces.length;
+
+            return new Promise(resolve => {
+                const stack = [];
+                const arrangement = {};
+                const usedHexIds = new Set();
+                const usedLabels = new Set();
+                const placedForcedHexIds = new Set();
+
+                if (centerHex) {
+                    arrangement['M2'] = centerHex;
+                    usedHexIds.add(centerHex.id);
+                    usedLabels.add(centerHex.label);
+                    if (forcedHexagonIds.has(centerHex.id)) {
+                        placedForcedHexIds.add(centerHex.id);
+                    }
+                }
+
+                stack.push({ slotIndex: 0, pieceIndex: 0 });
+
+                async function processStack() {
+                    let operationsSinceYield = 0;
+                    
+                    while (stack.length > 0) {
+                        if (++operationsSinceYield > CHUNK_SIZE) {
+                            const progress = stack.length > 0 ? stack[0].pieceIndex / totalForProgress : 1;
+                            onProgress(progress, processedCount, 0);
+                            setTimeout(processStack, 0);
+                            return;
+                        }
+
+                        const currentState = stack[stack.length - 1];
+                        const slotIndex = currentState.slotIndex;
+                        const pieceIndex = currentState.pieceIndex;
+
+                        if (pieceIndex >= candidatePieces.length) {
+                            stack.pop();
+                            if (stack.length > 0) {
+                                const previousState = stack[stack.length - 1];
+                                const previousSlot = slots[previousState.slotIndex];
+                                const pieceToRemove = arrangement[previousSlot];
+                                
+                                if(pieceToRemove) {
+                                    usedHexIds.delete(pieceToRemove.id);
+                                    usedLabels.delete(pieceToRemove.label);
+                                    if (forcedHexagonIds.has(pieceToRemove.id)) {
+                                        placedForcedHexIds.delete(pieceToRemove.id);
+                                    }
+                                    delete arrangement[previousSlot];
+                                }
+                            }
+                            continue;
+                        }
+
+                        const piece = candidatePieces[pieceIndex];
+                        currentState.pieceIndex++;
+
+                        if (usedHexIds.has(piece.id) || (piece.label !== 'empty' && usedLabels.has(piece.label))) {
+                            continue;
+                        }
+                        
+                        if (!forcedHexagonIds.has(piece.id)) {
+                            const remainingSlotsAfterThis = slots.length - (slotIndex + 1);
+                            const unplacedForcedCount = forcedHexagonIds.size - placedForcedHexIds.size;
+                            if (remainingSlotsAfterThis < unplacedForcedCount) {
+                                continue; 
+                            }
+                        }
+                        
+                        const slot = slots[slotIndex];
+                        arrangement[slot] = piece;
+                        usedHexIds.add(piece.id);
+                        usedLabels.add(piece.label);
+                        if (forcedHexagonIds.has(piece.id)) {
+                            placedForcedHexIds.add(piece.id);
+                        }
+
+                        if (slotIndex === slots.length - 1) {
+                            if (placedForcedHexIds.size === forcedHexagonIds.size) {
+                                processedCount++;
+                                const { score, colorCounts, elementCounts } = calculateArrangementScore(arrangement);
+
+                                if (score > bestScore) {
+                                    bestScore = score;
+                                    bestArrangements = [{ arrangement: { ...arrangement }, colorCounts, elementCounts }];
+                                } else if (score === bestScore && bestScore !== -1) {
+                                    bestArrangements.push({ arrangement: { ...arrangement }, colorCounts, elementCounts });
+                                }
+                            }
+                            
+                            usedHexIds.delete(piece.id);
+                            usedLabels.delete(piece.label);
+                            if (forcedHexagonIds.has(piece.id)) {
+                                placedForcedHexIds.delete(piece.id);
+                            }
+                            delete arrangement[slot];
+
+                            if (searchMode === 'stopAt12' && bestScore === 12) {
+                                onProgress(1, processedCount, processedCount);
+                                resolve({ score: bestScore, arrangements: bestArrangements });
+                                return;
+                            }
+                        } else {
+                            stack.push({ slotIndex: slotIndex + 1, pieceIndex: 0 });
+                        }
+                    }
+                    
+                    onProgress(1, processedCount, processedCount);
+                    resolve({ score: bestScore, arrangements: bestArrangements });
+                }
+
+                processStack();
+            });
+        }
+
+        function applyTieBreaking(bestLayouts, tiebreakMode, colorPriority, elementPriority) {
+            if (!bestLayouts || bestLayouts.length === 0) return [];
+            
+            const sorted = [...bestLayouts].sort((a, b) => {
+                if (tiebreakMode === 'rarity') {
+                    const rarityA = calculateRarityScore(a.arrangement);
+                    const rarityB = calculateRarityScore(b.arrangement);
+                    if (rarityB !== rarityA) return rarityB - rarityA;
+                } else if (tiebreakMode === 'color') {
+                    for (const color of colorPriority) {
+                        const diff = b.colorCounts[color] - a.colorCounts[color];
+                        if (diff !== 0) return diff;
+                    }
+                } else if (tiebreakMode === 'element') {
+                    for (const element of elementPriority) {
+                        const diff = b.elementCounts[element] - a.elementCounts[element];
+                        if (diff !== 0) return diff;
+                    }
+                }
+                return 0; // Keep original order if all tie-breakers are equal
+            });
+
+            return sorted;
+        }
+
+        function preprocessHexagons(hexagons) {
+            const sidePatternGroups = new Map();
+            hexagons.forEach(hex => {
+                const key = hex.sides.join(',');
+                if (!sidePatternGroups.has(key)) {
+                    sidePatternGroups.set(key, []);
+                }
+                sidePatternGroups.get(key).push(hex);
+            });
+            const uniqueHexagons = Array.from(sidePatternGroups.values()).map(group => group[0]);
+            return { uniqueHexagons, sidePatternGroups };
+        }
+
+        function expandArrangements(baseArrangements, sidePatternGroups) {
+            if (!baseArrangements || baseArrangements.length === 0) return [];
+            
+            const allExpandedArrangements = [];
+            const uniqueLayouts = new Set(); // Use a Set to track unique layouts
+
+            baseArrangements.forEach(baseResult => {
+                const arrangement = baseResult.arrangement;
+                const slots = Object.keys(arrangement);
+                const piecesInArrangement = slots.map(slot => arrangement[slot]);
+                
+                const pieceGroups = piecesInArrangement.map(piece => {
+                    if (piece.label === 'empty') {
+                        return [piece]; // This is a placeholder, treat as a group of one
+                    }
+                    const key = piece.sides.join(',');
+                    return sidePatternGroups.get(key);
+                });
+
+                let combinations = [{}];
+                for (let i = 0; i < slots.length; i++) {
+                    const slot = slots[i];
+                    const group = pieceGroups[i];
+                    const newCombinations = [];
+                    for (const hex of group) {
+                        for (const combo of combinations) {
+                            if (hex.label !== 'empty' && Object.values(combo).some(existingHex => existingHex.id === hex.id)) {
+                                continue;
+                            }
+                            const newCombo = { ...combo };
+                            newCombo[slot] = hex;
+                            newCombinations.push(newCombo);
+                        }
+                    }
+                    combinations = newCombinations;
+                }
+
+                combinations.forEach(finalArrangement => {
+                    if (Object.keys(finalArrangement).length === slots.length) {
+                        // Create a unique key for the layout based on the real pieces and their positions.
+                        // Empty slots are treated as identical.
+                        const layoutKey = Object.keys(finalArrangement)
+                            .sort()
+                            .map(slot => {
+                                const piece = finalArrangement[slot];
+                                return `${slot}:${piece.label === 'empty' ? 'empty' : piece.id}`;
+                            })
+                            .join(',');
+
+                        if (!uniqueLayouts.has(layoutKey)) {
+                            uniqueLayouts.add(layoutKey);
+                            allExpandedArrangements.push({
+                                arrangement: finalArrangement,
+                                colorCounts: baseResult.colorCounts,
+                                elementCounts: baseResult.elementCounts
+                            });
+                        }
+                    }
+                });
+            });
+            return allExpandedArrangements;
+        }
+
+        // --- Visualisation & UI Logic ---
+        const colorMap = { 'red': '#ef4444', 'blue': '#3b82f6', 'purple': '#8b5cf6', 'gray': '#acb0b6', 'yellow': '#eab308', 'none': '#374151' };
+        const rarityColor = { 'mythic': '#ef4444', 'legendary': '#eab308', 'epic': '#8b5cf6', 'rare': '#22c55e', 'common': '#acb0b6' };
+
+        function getSideMidpoint(size, sideIndex) {
+            // Side ordering: top-left (0), top-right (1), right (2), bottom-right (3), bottom-left (4), left (5)
+            // Map side indices to the correct vertex pairs
+            const sideToVertices = {
+                0: [5, 0], // top-left edge: between vertex 5 (left) and vertex 0 (top)
+                1: [0, 1], // top-right edge: between vertex 0 (top) and vertex 1 (top-right)
+                2: [1, 2], // right edge: between vertex 1 (top-right) and vertex 2 (bottom-right)
+                3: [2, 3], // bottom-right edge: between vertex 2 (bottom-right) and vertex 3 (bottom)
+                4: [3, 4], // bottom-left edge: between vertex 3 (bottom) and vertex 4 (bottom-left)
+                5: [4, 5]  // left edge: between vertex 4 (bottom-left) and vertex 5 (top-left)
+            };
+            
+            const [v1, v2] = sideToVertices[sideIndex];
+            const angle1 = (Math.PI / 3) * v1 - (Math.PI / 2);
+            const angle2 = (Math.PI / 3) * v2 - (Math.PI / 2);
+            
+            return {
+                x: (size * Math.cos(angle1) + size * Math.cos(angle2)) / 2,
+                y: (size * Math.sin(angle1) + size * Math.sin(angle2)) / 2
+            };
+        }
+
+        function drawConnections(ctx, arrangement, positions, size) {
+            // Side ordering: top-left (0), top-right (1), right (2), bottom-right (3), bottom-left (4), left (5)
+            const connections = [
+                // Horizontal connections
+                { p1: 'T1', s1: 2, p2: 'T2', s2: 5 }, { p1: 'M1', s1: 2, p2: 'M2', s2: 5 }, { p1: 'M2', s1: 2, p2: 'M3', s2: 5 }, { p1: 'B1', s1: 2, p2: 'B2', s2: 5 },
+                // Diagonal connections
+                { p1: 'T1', s1: 3, p2: 'M1', s2: 1 }, { p1: 'T1', s1: 4, p2: 'M2', s2: 0 }, { p1: 'T2', s1: 4, p2: 'M2', s2: 1 }, { p1: 'T2', s1: 3, p2: 'M3', s2: 0 },
+                { p1: 'M1', s1: 3, p2: 'B1', s2: 1 }, { p1: 'M1', s1: 4, p2: 'B1', s2: 0 }, { p1: 'M2', s1: 3, p2: 'B2', s2: 1 }, { p1: 'M3', s1: 4, p2: 'B2', s2: 0 }
+            ];
+            connections.forEach(({ p1, s1, p2, s2 }) => {
+                const hex1 = arrangement[p1]; const hex2 = arrangement[p2];
+                if (hex1 && hex2 && hex1.sides[s1] !== 'none' && hex1.sides[s1] === hex2.sides[s2]) {
+                    const pos1 = positions[p1]; const pos2 = positions[p2];
+                    const mid1 = getSideMidpoint(size, s1); const mid2 = getSideMidpoint(size, s2);
+                    ctx.beginPath();
+                    ctx.moveTo(pos1.x + mid1.x, pos1.y + mid1.y);
+                    ctx.lineTo(pos2.x + mid2.x, pos2.y + mid2.y);
+                    ctx.strokeStyle = colorMap[hex1.sides[s1]];
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        // Global image cache to prevent repeated loading
+        const imageCache = new Map();
+        
+        function loadImage(src) {
+            if (imageCache.has(src)) {
+                return imageCache.get(src);
+            }
+            
+            const img = new Image();
+            img.crossOrigin = 'anonymous'; // Handle CORS for external images
+            img.src = src;
+            imageCache.set(src, img);
+            return img;
+        }
+
+        function createHexagonSVG(x, y, size, hexagon) {
+            // Calculate hexagon points
+            const points = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i - (Math.PI / 2); // Start from top
+                const px = x + size * Math.cos(angle);
+                const py = y + size * Math.sin(angle);
+                points.push(`${px},${py}`);
+            }
+            
+            // Create SVG group for hexagon
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('class', 'hexagon-item');
+            
+            // Handle empty hexagons (show as dashed outline)
+            const isEmpty = !hexagon || hexagon.label === 'empty';
+            
+            // Create hexagon polygon (background)
+            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            polygon.setAttribute('points', points.join(' '));
+            if (isEmpty) {
+                polygon.setAttribute('fill', 'rgba(42, 42, 42, 0.1)');
+                polygon.setAttribute('stroke', '#666');
+                polygon.setAttribute('stroke-width', '1');
+                polygon.setAttribute('stroke-dasharray', '3,3');
+            } else {
+                polygon.setAttribute('fill', 'rgba(42, 42, 42, 0.3)');
+                polygon.setAttribute('stroke', '#aaa');
+                polygon.setAttribute('stroke-width', '0.5');
+            }
+            g.appendChild(polygon);
+            
+            // Skip content for empty hexagons
+            if (isEmpty) {
+                // Add "EMPTY" text for empty slots
+                const emptyText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                emptyText.setAttribute('x', x);
+                emptyText.setAttribute('y', y);
+                emptyText.setAttribute('text-anchor', 'middle');
+                emptyText.setAttribute('dominant-baseline', 'middle');
+                emptyText.setAttribute('font-family', 'Inter');
+                emptyText.setAttribute('font-size', Math.max(8, size * 0.15));
+                emptyText.setAttribute('font-weight', 'bold');
+                emptyText.setAttribute('fill', '#666');
+                emptyText.textContent = 'EMPTY';
+                g.appendChild(emptyText);
+                
+                // Still draw hexagon sides for empty slots (all sides are 'none')
+                const sideToVertices = [
+                    [5, 0], [0, 1], [1, 2], [2, 3], [3, 4], [4, 5]
+                ];
+                
+                for (let i = 0; i < 6; i++) {
+                    const [v1, v2] = sideToVertices[i];
+                    const angle1 = (Math.PI / 3) * v1 - (Math.PI / 2);
+                    const angle2 = (Math.PI / 3) * v2 - (Math.PI / 2);
+                    const x1 = x + size * Math.cos(angle1);
+                    const y1 = y + size * Math.sin(angle1);
+                    const x2 = x + size * Math.cos(angle2);
+                    const y2 = y + size * Math.sin(angle2);
+                    
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('class', 'border-line');
+                    line.setAttribute('data-border-index', i);
+                    line.setAttribute('x1', x1);
+                    line.setAttribute('y1', y1);
+                    line.setAttribute('x2', x2);
+                    line.setAttribute('y2', y2);
+                    line.setAttribute('stroke', colorMap['none']);
+                    line.setAttribute('stroke-width', Math.max(2, size * 0.1));
+                    line.setAttribute('stroke-linecap', 'round');
+                    g.appendChild(line);
+                }
+                
+                return g;
+            }
+            
+            // Add ToyZ icon if available
+            if (hexagon.toyzData && hexagon.toyzData.icon) {
+                const iconSize = size * 1.2;
+                const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+                image.setAttribute('x', x - iconSize/2);
+                image.setAttribute('y', y - iconSize/2 - size * 0.1);
+                image.setAttribute('width', iconSize);
+                image.setAttribute('height', iconSize);
+                image.setAttribute('href', hexagon.toyzData.icon);
+                image.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+                g.appendChild(image);
+                
+                // Add level indicator if ToyZ has level data
+                if (hexagon.toyzLevel && hexagon.toyzLevel > 0) {
+                    const levelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    levelText.setAttribute('x', x);
+                    levelText.setAttribute('y', y + size * 0.6);
+                    levelText.setAttribute('text-anchor', 'middle');
+                    levelText.setAttribute('dominant-baseline', 'middle');
+                    levelText.setAttribute('font-family', 'Inter');
+                    levelText.setAttribute('font-size', Math.max(8, size * 0.2));
+                    levelText.setAttribute('font-weight', 'bold');
+                    levelText.setAttribute('fill', '#FFD700');
+                    levelText.setAttribute('stroke', '#000000');
+                    levelText.setAttribute('stroke-width', '1');
+                    levelText.textContent = `L${hexagon.toyzLevel}`;
+                    g.appendChild(levelText);
+                }
+                
+                // Add ToyZ text below icon
+                const textY = y + size * 0.35;
+                const baseFontSize = Math.max(5, size * 0.12);
+                const labelFontSize = Math.max(6, size * 0.14);
+                const lineSpacing = baseFontSize * 1.4;
+                
+                // Name/label
+                const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                nameText.setAttribute('x', x);
+                nameText.setAttribute('y', textY);
+                nameText.setAttribute('text-anchor', 'middle');
+                nameText.setAttribute('dominant-baseline', 'middle');
+                nameText.setAttribute('font-family', 'Inter');
+                nameText.setAttribute('font-size', labelFontSize);
+                nameText.setAttribute('font-weight', 'bold');
+                nameText.setAttribute('fill', rarityColor[hexagon.rarity] || '#ffffff');
+                nameText.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
+                nameText.setAttribute('stroke-width', '2');
+                nameText.setAttribute('paint-order', 'stroke fill');
+                let displayLabel = hexagon.label;
+                if (displayLabel.length > 8) {
+                    displayLabel = displayLabel.substring(0, 8) + '...';
+                }
+                nameText.textContent = displayLabel;
+                g.appendChild(nameText);
+                
+                // ID
+                const idText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                idText.setAttribute('x', x);
+                idText.setAttribute('y', textY + lineSpacing);
+                idText.setAttribute('text-anchor', 'middle');
+                idText.setAttribute('dominant-baseline', 'middle');
+                idText.setAttribute('font-family', 'Inter');
+                idText.setAttribute('font-size', baseFontSize);
+                idText.setAttribute('fill', rarityColor[hexagon.rarity] || '#ffffff');
+                idText.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
+                idText.setAttribute('stroke-width', '1');
+                idText.setAttribute('paint-order', 'stroke fill');
+                idText.textContent = `ID: ${hexagon.id}`;
+                g.appendChild(idText);
+                
+                // Element - keep as text with color
+                if (hexagon.element && hexagon.element !== 'none') {
+                    const elementText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    elementText.setAttribute('x', x);
+                    elementText.setAttribute('y', textY + lineSpacing * 2);
+                    elementText.setAttribute('text-anchor', 'middle');
+                    elementText.setAttribute('dominant-baseline', 'middle');
+                    elementText.setAttribute('font-family', 'Inter');
+                    elementText.setAttribute('font-size', baseFontSize);
+                    elementText.setAttribute('font-weight', 'bold');
+                    elementText.setAttribute('fill', elementColors[hexagon.element] || '#ffffff');
+                    elementText.setAttribute('stroke', 'rgba(0, 0, 0, 0.8)');
+                    elementText.setAttribute('stroke-width', '1');
+                    elementText.setAttribute('paint-order', 'stroke fill');
+                    elementText.textContent = hexagon.element.toUpperCase();
+                    g.appendChild(elementText);
+                }
+            } else {
+                // Display text for random shapes or when no ToyZ icon is available
+                const baseFontSize = Math.max(6, size * 0.15);
+                const labelFontSize = Math.max(8, size * 0.18);
+                const lineSpacing = baseFontSize * 1.5;
+                
+                // Name/label
+                const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                nameText.setAttribute('x', x);
+                nameText.setAttribute('y', y - lineSpacing);
+                nameText.setAttribute('text-anchor', 'middle');
+                nameText.setAttribute('dominant-baseline', 'middle');
+                nameText.setAttribute('font-family', 'Inter');
+                nameText.setAttribute('font-size', labelFontSize);
+                nameText.setAttribute('font-weight', 'bold');
+                nameText.setAttribute('fill', rarityColor[hexagon.rarity] || '#ffffff');
+                let displayLabel = hexagon.label;
+                if (displayLabel.length > 10) {
+                    displayLabel = displayLabel.substring(0, 10) + '...';
+                }
+                nameText.textContent = displayLabel;
+                g.appendChild(nameText);
+                
+                // ID
+                const idText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                idText.setAttribute('x', x);
+                idText.setAttribute('y', y);
+                idText.setAttribute('text-anchor', 'middle');
+                idText.setAttribute('dominant-baseline', 'middle');
+                idText.setAttribute('font-family', 'Inter');
+                idText.setAttribute('font-size', baseFontSize);
+                idText.setAttribute('fill', rarityColor[hexagon.rarity] || '#ffffff');
+                idText.textContent = `ID: ${hexagon.id}`;
+                g.appendChild(idText);
+                
+                // Element - keep as text with color
+                if (hexagon.element && hexagon.element !== 'none') {
+                    const elementText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    elementText.setAttribute('x', x);
+                    elementText.setAttribute('y', y + lineSpacing);
+                    elementText.setAttribute('text-anchor', 'middle');
+                    elementText.setAttribute('dominant-baseline', 'middle');
+                    elementText.setAttribute('font-family', 'Inter');
+                    elementText.setAttribute('font-size', baseFontSize);
+                    elementText.setAttribute('font-weight', 'bold');
+                    elementText.setAttribute('fill', elementColors[hexagon.element] || '#ffffff');
+                    elementText.textContent = hexagon.element.toUpperCase();
+                    g.appendChild(elementText);
+                }
+            }
+            
+            // Draw hexagon sides as lines
+            // Side ordering: top-left (0), top-right (1), right (2), bottom-right (3), bottom-left (4), left (5)
+            const sideToVertices = [
+                [5, 0], // side 0: top-left edge
+                [0, 1], // side 1: top-right edge
+                [1, 2], // side 2: right edge
+                [2, 3], // side 3: bottom-right edge
+                [3, 4], // side 4: bottom-left edge
+                [4, 5]  // side 5: left edge
+            ];
+            
+            for (let i = 0; i < 6; i++) {
+                const [v1, v2] = sideToVertices[i];
+                const angle1 = (Math.PI / 3) * v1 - (Math.PI / 2);
+                const angle2 = (Math.PI / 3) * v2 - (Math.PI / 2);
+                const x1 = x + size * Math.cos(angle1);
+                const y1 = y + size * Math.sin(angle1);
+                const x2 = x + size * Math.cos(angle2);
+                const y2 = y + size * Math.sin(angle2);
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('class', 'border-line');
+                line.setAttribute('data-border-index', i);
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('stroke', colorMap[hexagon.sides[i]]);
+                line.setAttribute('stroke-width', Math.max(2, size * 0.1));
+                line.setAttribute('stroke-linecap', 'round');
+                g.appendChild(line);
+            }
+            
+            return g;
+        }
+
+        function drawArrangement(ctx, arrangement, title, layoutContainer = null) {
+            const canvas = ctx.canvas;
+            const centerX = canvas.width / 2; 
+            const centerY = canvas.height / 2;
+            const size = 45; 
+            const spacingFactor = 1.15;
+            const widthBetween = size * Math.sqrt(3) * spacingFactor;
+            const heightBetween = size * 1.5 * spacingFactor;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (!arrangement) {
+                ctx.fillStyle = 'white'; 
+                ctx.font = '20px Inter'; 
+                ctx.textAlign = 'center';
+                ctx.fillText(title, centerX, centerY);
+                return;
+            }
+            
+            const positions = {
+                M2: { x: centerX, y: centerY }, 
+                M1: { x: centerX - widthBetween, y: centerY }, 
+                M3: { x: centerX + widthBetween, y: centerY },
+                T1: { x: centerX - widthBetween / 2, y: centerY - heightBetween }, 
+                T2: { x: centerX + widthBetween / 2, y: centerY - heightBetween },
+                B1: { x: centerX - widthBetween / 2, y: centerY + heightBetween }, 
+                B2: { x: centerX + widthBetween / 2, y: centerY + heightBetween }
+            };
+            
+            // Create a single SVG for the entire arrangement
+            if (layoutContainer) {
+                const mainSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                mainSvg.setAttribute('width', canvas.width);
+                mainSvg.setAttribute('height', canvas.height);
+                mainSvg.style.position = 'relative';
+                mainSvg.style.display = 'block';
+                mainSvg.style.margin = '0 auto';
+                mainSvg.style.pointerEvents = 'none';
+                
+                // Add connection lines first (behind hexagons)
+                // Side ordering: top-left (0), top-right (1), right (2), bottom-right (3), bottom-left (4), left (5)
+                const connections = [
+                    // Horizontal connections (right to left)
+                    { p1: 'T1', s1: 2, p2: 'T2', s2: 5 },  // T1 right to T2 left
+                    { p1: 'M1', s1: 2, p2: 'M2', s2: 5 },  // M1 right to M2 left
+                    { p1: 'M2', s1: 2, p2: 'M3', s2: 5 },  // M2 right to M3 left
+                    { p1: 'B1', s1: 2, p2: 'B2', s2: 5 },  // B1 right to B2 left
+                    
+                    // Diagonal connections
+                    { p1: 'M1', s1: 1, p2: 'T1', s2: 4 },  // M1 top-right to T1 bottom-left
+                    { p1: 'T1', s1: 3, p2: 'M2', s2: 0 },  // T1 bottom-right to M2 top-left
+                    { p1: 'T2', s1: 4, p2: 'M2', s2: 1 },  // T2 bottom-left to M2 top-right
+                    { p1: 'T2', s1: 3, p2: 'M3', s2: 0 },  // T2 bottom-right to M3 top-left
+                    { p1: 'M1', s1: 3, p2: 'B1', s2: 0 },  // M1 bottom-right to B1 top-left
+                    { p1: 'M2', s1: 4, p2: 'B1', s2: 1 },  // M2 bottom-left to B1 top-right
+                    { p1: 'M2', s1: 3, p2: 'B2', s2: 0 },  // M2 bottom-right to B2 top-left
+                    { p1: 'M3', s1: 4, p2: 'B2', s2: 1 }   // M3 bottom-left to B2 top-right
+                ];
+                
+                connections.forEach(({ p1, s1, p2, s2 }) => {
+                    const hex1 = arrangement[p1]; 
+                    const hex2 = arrangement[p2];
+                    if (hex1 && hex2 && hex1.sides && hex2.sides && 
+                        hex1.sides[s1] !== 'none' && hex1.sides[s1] === hex2.sides[s2]) {
+                        const pos1 = positions[p1]; 
+                        const pos2 = positions[p2];
+                        
+                        // Get midpoints using the getSideMidpoint function
+                        const mid1 = getSideMidpoint(size, s1);
+                        const mid2 = getSideMidpoint(size, s2);
+                        
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', pos1.x + mid1.x);
+                        line.setAttribute('y1', pos1.y + mid1.y);
+                        line.setAttribute('x2', pos2.x + mid2.x);
+                        line.setAttribute('y2', pos2.y + mid2.y);
+                        line.setAttribute('stroke', colorMap[hex1.sides[s1]]);
+                        line.setAttribute('stroke-width', '3');
+                        line.setAttribute('stroke-linecap', 'round');
+                        line.setAttribute('opacity', '0.8');
+                        mainSvg.appendChild(line);
+                    }
+                });
+                
+                // Add hexagons on top of connections
+                for (const key in arrangement) {
+                    const hexagon = arrangement[key]; 
+                    const pos = positions[key];
+                    if (hexagon && pos) { 
+                        const svgHexagon = createHexagonSVG(pos.x, pos.y, size, hexagon);
+                        mainSvg.appendChild(svgHexagon);
+                    }
+                }
+                
+                // Replace the canvas with SVG
+                canvas.style.display = 'none';
+                layoutContainer.appendChild(mainSvg);
+            }
+        }
+
+        // --- ToyZ Database Integration ---
+        let selectedToyZ = null;
+        let currentLevel = 0;
+        
+        function searchToyZ(query) {
+            if (!query || query.length < 2) return [];
+            
+            // Use TOYZ_DATABASE.toyz from the imported database
+            if (typeof TOYZ_DATABASE === 'undefined') {
+                console.error('TOYZ_DATABASE not found - make sure toyz-data.js is loaded');
+                return [];
+            }
+            
+            return TOYZ_DATABASE.toyz.filter(toyZ => 
+                toyZ.name.toLowerCase().includes(query.toLowerCase())
+            ).slice(0, 10); // Limit to 10 results
+        }
+        
+        function displayToyZSuggestions(suggestions) {
+            const suggestionsEl = document.getElementById('toyz-suggestions');
+            suggestionsEl.innerHTML = '';
+            
+            if (suggestions.length === 0) {
+                suggestionsEl.style.display = 'none';
+                return;
+            }
+            
+            suggestions.forEach(toyZ => {
+                const suggestionDiv = document.createElement('div');
+                suggestionDiv.className = 'p-2 hover:bg-gray-700 cursor-pointer border-b border-gray-600 last:border-b-0';
+                
+                const mappedElement = elementMapping[toyZ.element] || toyZ.element.toLowerCase();
+                const elementColor = elementColors[mappedElement] || '#ffffff';
+                
+                suggestionDiv.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        ${toyZ.icon ? `<img src="${toyZ.icon}" class="w-8 h-8 rounded" alt="${toyZ.name}">` : '<div class="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs">?</div>'}
+                        <div>
+                            <div class="font-semibold text-white">${toyZ.name}</div>
+                            <div class="text-sm text-gray-400">${toyZ.rarity} • <span style="color: ${elementColor}">${toyZ.element}</span></div>
+                        </div>
+                    </div>
+                `;
+                
+                suggestionDiv.addEventListener('click', () => {
+                    selectToyZ(toyZ);
+                });
+                
+                suggestionsEl.appendChild(suggestionDiv);
+            });
+            
+            suggestionsEl.style.display = 'block';
+        }
+        
+        function selectToyZ(toyZ) {
+            selectedToyZ = toyZ;
+            document.getElementById('toyz-search').value = toyZ.name;
+            document.getElementById('manual-entry').style.display = 'none';
+            document.getElementById('toyz-suggestions').style.display = 'none'; // Close autocomplete
+            
+            // Auto-fill label, rarity, element and ID fields
+            document.getElementById('new-hex-label').value = toyZ.name;
+            document.getElementById('new-hex-rarity').value = toyZ.rarity.toLowerCase();
+            const mappedElement = elementMapping[toyZ.element] || toyZ.element.toLowerCase();
+            document.getElementById('new-hex-element').value = mappedElement;
+            document.getElementById('new-hex-id').value = getNextId();
+        }
+        
+        
+        function updateToyZBuffsDisplay() {
+            if (!selectedToyZ) return;
+            
+            const buffsEl = document.getElementById('toyz-buffs');
+            const level = parseInt(document.getElementById('toyz-level').value);
+            
+            let buffsHTML = '<strong>Active Buffs:</strong><br>';
+            
+            if (level === 0) {
+                buffsHTML += '<span class="text-gray-500">No buffs active at level 0</span>';
+            } else {
+                const activeBuffs = getActiveBuffs(selectedToyZ, level);
+                if (activeBuffs.length === 0) {
+                    buffsHTML += '<span class="text-gray-500">No buffs available</span>';
+                } else {
+                    activeBuffs.forEach((buff, index) => {
+                        buffsHTML += `<div class="text-green-400">• ${buff.name}: +${buff.value}${buff.isPercentage ? '%' : ''}</div>`;
+                    });
+                }
+            }
+            
+            buffsEl.innerHTML = buffsHTML;
+        }
+        
+        function getActiveBuffs(toyZ, level) {
+            const buffs = [];
+            // Correct buff availability: 1st buff at level 0+, 2nd buff at level 2+, 3rd buff at level 4+, 4th buff at level 6+
+            const numBuffs = level >= 6 ? 4 :
+                           level >= 4 ? 3 : 
+                           level >= 2 ? 2 : 
+                           level >= 0 ? 1 : 0;
+            
+            if (toyZ && toyZ.buffs && toyZ.buffs.length > 0) {
+                // Use the new database structure where buffs is an array
+                for (let i = 0; i < Math.min(numBuffs, toyZ.buffs.length); i++) {
+                    const buff = toyZ.buffs[i];
+                    buffs.push({
+                        name: buff.type,
+                        value: buff.value,
+                        isPercentage: buff.type === 'Crit %' || buff.type === 'Atk Spd' // These are percentage buffs
+                    });
+                }
+            }
+            
+            return buffs;
+        }
+        
+        function clearToyZSelection() {
+            selectedToyZ = null;
+            editingToyZ = null;
+            document.getElementById('toyz-search').value = '';
+            document.getElementById('toyz-suggestions').style.display = 'none';
+            document.getElementById('manual-entry').style.display = 'none'; // Hide manual entry when clearing
+            
+            // Reset form fields
+            document.getElementById('new-hex-label').value = '';
+            document.getElementById('new-hex-rarity').value = document.getElementById('new-hex-rarity').options[0].value;
+            document.getElementById('new-hex-element').value = document.getElementById('new-hex-element').options[0].value;
+            document.getElementById('toyz-level').value = '0';
+            
+            // Reset all side selectors to their first option
+            const sideSelectors = document.querySelectorAll('#new-hex-sides select');
+            sideSelectors.forEach(selector => {
+                selector.value = selector.options[0].value;
+            });
+            
+            // Reset button states
+            document.getElementById('add-shape-button').style.display = 'inline-block';
+            document.getElementById('update-shape-button').style.display = 'none';
+            
+            // Always get a fresh new ID when clearing
+            document.getElementById('new-hex-id').value = getNextId();
+        }
+        
+        function getAllPossibleBuffTypes() {
+            if (typeof TOYZ_DATABASE === 'undefined') {
+                // Fallback list if database is not available
+                return ['ATK', 'DEF', 'HP', 'Crit %', 'Atk Spd', 'Basic Damage', 'Boss Damage', 'Skill Damage', 'All Damage', 'Crit Damage'];
+            }
+            
+            const buffTypes = new Set();
+            TOYZ_DATABASE.toyz.forEach(toyZ => {
+                if (toyZ.buffs && Array.isArray(toyZ.buffs)) {
+                    toyZ.buffs.forEach(buff => {
+                        if (buff.type) {
+                            buffTypes.add(buff.type);
+                        }
+                    });
+                }
+            });
+            
+            return Array.from(buffTypes).sort();
+        }
+        
+        function setupManualBuffInputs() {
+            const buffInputsContainer = document.getElementById('buff-inputs');
+            const buffTypes = getAllPossibleBuffTypes();
+            const currentLevel = parseInt(document.getElementById('toyz-level').value);
+            
+            // Clear existing inputs
+            buffInputsContainer.innerHTML = '';
+            
+            // Create 4 buff input rows
+            for (let i = 1; i <= 4; i++) {
+                const buffRow = document.createElement('div');
+                buffRow.className = 'flex items-center gap-3';
+                buffRow.id = `buff-row-${i}`;
+                
+                // Determine if this buff should be enabled based on level
+                const isEnabled = (i === 1 && currentLevel >= 0) || 
+                                (i === 2 && currentLevel >= 2) || 
+                                (i === 3 && currentLevel >= 4) || 
+                                (i === 4 && currentLevel >= 6);
+                
+                // Buff number label
+                const label = document.createElement('span');
+                label.className = `text-sm font-medium ${isEnabled ? 'text-gray-300' : 'text-gray-500'} min-w-[60px]`;
+                label.textContent = `Buff ${i}:`;
+                buffRow.appendChild(label);
+                
+                // Buff type selector
+                const typeSelect = document.createElement('select');
+                typeSelect.id = `buff-type-${i}`;
+                typeSelect.className = 'bg-gray-700 border border-gray-600 text-white rounded-md p-2 text-sm flex-1';
+                typeSelect.disabled = !isEnabled;
+                
+                // Add empty option
+                const emptyOption = document.createElement('option');
+                emptyOption.value = '';
+                emptyOption.textContent = isEnabled ? 'Select buff type...' : 'Not available at this level';
+                typeSelect.appendChild(emptyOption);
+                
+                // Add buff type options
+                if (isEnabled) {
+                    buffTypes.forEach(buffType => {
+                        const option = document.createElement('option');
+                        option.value = buffType;
+                        option.textContent = buffType;
+                        typeSelect.appendChild(option);
+                    });
+                }
+                
+                buffRow.appendChild(typeSelect);
+                
+                // Buff value input
+                const valueInput = document.createElement('input');
+                valueInput.type = 'number';
+                valueInput.id = `buff-value-${i}`;
+                valueInput.className = 'bg-gray-700 border border-gray-600 text-white rounded-md p-2 text-sm w-20';
+                valueInput.placeholder = isEnabled ? 'Value' : 'N/A';
+                valueInput.disabled = !isEnabled;
+                valueInput.min = '0';
+                valueInput.step = '1';
+                
+                buffRow.appendChild(valueInput);
+                
+                buffInputsContainer.appendChild(buffRow);
+            }
+        }
+        
+        function getSidesFromForm() {
+            // Get the sides from the form selectors
+            return Array.from(document.querySelectorAll('#new-hex-sides select')).map(s => s.value);
+        }
+        
+        function generateSidesFromToyZ(toyZ, level) {
+            // For now, generate random sides based on element/rarity
+            // This could be enhanced with actual ToyZ side patterns if available
+            const colors = Object.keys(colorMap).filter(c => c !== 'none');
+            const sides = [];
+            
+            // Higher rarity = more matching colors
+            const rarityBonus = {
+                'Common': 0,
+                'Rare': 1, 
+                'Epic': 2,
+                'Legendary': 3,
+                'Mythic': 4
+            };
+            
+            const bonus = rarityBonus[toyZ.rarity] || 0;
+            const baseColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            for (let i = 0; i < 6; i++) {
+                if (Math.random() < 0.3 + (bonus * 0.1)) {
+                    sides.push(baseColor);
+                } else {
+                    sides.push(colors[Math.floor(Math.random() * colors.length)]);
+                }
+            }
+            
+            return sides;
+        }
+
+        // --- UI Helper Functions ---
+        let hexagonObjects = [];  // All hexagon objects
+        let selectedPoolIds = new Set();  // Shapes in the selected pool
+        let tempSelectedIds = new Set();  // Temporarily selected shapes for transfer
+        let editingToyZ = null;  // Currently editing ToyZ
+        
+        function getNextId() {
+            return hexagonObjects.length > 0 ? Math.max(...hexagonObjects.map(h => h.id)) + 1 : 1;
+        }
+        
+        function showToast(message, type = 'info', duration = 3000) {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()" style="margin-left: 10px; background: none; border: none; color: white; cursor: pointer; font-size: 1.2em;">&times;</button>
+            `;
+            toastContainer.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Auto-remove after duration
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        function updatePoolCounters() {
+            const availableCounter = document.getElementById('available-counter');
+            const selectedCounter = document.getElementById('selected-counter');
+            
+            const availableCount = hexagonObjects.filter(h => !selectedPoolIds.has(h.id)).length;
+            const selectedCount = selectedPoolIds.size;
+            
+            availableCounter.textContent = `Count: ${availableCount}`;
+            selectedCounter.textContent = `Count: ${selectedCount}`;
+        }
+
+        // --- Main Execution ---
+        window.onload = () => {
+            const scoreEl = document.getElementById('score');
+            const selectEl = document.getElementById('center-piece-select');
+            const solveBtn = document.getElementById('solve-button');
+            const scoreEl2 = document.getElementById('score2');
+            const secondGridContainer = document.getElementById('second-grid-container');
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const progressContainer2 = document.getElementById('progress-container2');
+            const progressBar2 = document.getElementById('progress-bar2');
+            const progressText2 = document.getElementById('progress-text2');
+            const colorPriorityControls = document.getElementById('color-priority-controls');
+            const elementPriorityControls = document.getElementById('element-priority-controls');
+            const tiebreakFieldset = document.getElementById('tiebreak-fieldset');
+            const resultsSummary1 = document.getElementById('results-summary1');
+            const resultsSummary2 = document.getElementById('results-summary2');
+            const addShapeBtn = document.getElementById('add-shape-button');
+            const addRandomShapeBtn = document.getElementById('add-random-shape-button');
+            const availableShapesEl = document.getElementById('available-shapes');
+            const selectedShapesEl = document.getElementById('selected-shapes');
+            const moveToSelectedBtn = document.getElementById('move-to-selected');
+            const moveToAvailableBtn = document.getElementById('move-to-available');
+            const moveAllToSelectedBtn = document.getElementById('move-all-to-selected');
+            const moveAllToAvailableBtn = document.getElementById('move-all-to-available');
+            const shapeSizeSlider = document.getElementById('shape-size-slider');
+            const shapeSizeValue = document.getElementById('shape-size-value');
+
+            let allBestLayoutsGrid1 = [];
+            let allBestLayoutsGrid2 = [];
+            let currentPageGrid1 = 1;
+            let currentPageGrid2 = 1;
+            const LAYOUTS_PER_PAGE = 9;
+
+            function saveHexagonsToStorage() {
+                localStorage.setItem('hexagonPool', JSON.stringify(hexagonObjects));
+            }
+
+            function loadHexagonsFromStorage() {
+                const savedHexagons = localStorage.getItem('hexagonPool');
+                if (savedHexagons) {
+                    const parsedHexagons = JSON.parse(savedHexagons);
+                    return parsedHexagons.map(h => {
+                        const hex = new Hexagon(h.id, h.label, h.rarity, h.sides, h.element);
+                        // Preserve ToyZ data if it exists
+                        if (h.toyzData) {
+                            hex.toyzData = h.toyzData;
+                        }
+                        if (h.toyzLevel !== undefined) {
+                            hex.toyzLevel = h.toyzLevel;
+                        }
+                        return hex;
+                    });
+                }
+                return [];
+            }
+
+            function updateEstimationText() {
+                const estimationEl = document.getElementById('estimation-text1');
+                if (!estimationEl) return;
+
+                const selectedValue = document.getElementById('center-piece-select').value;
+                const centerId = selectedValue === "any" ? null : parseInt(selectedValue, 10);
+                const { uniqueHexagons } = preprocessHexagons(hexagonObjects);
+                
+                const selectedCount = selectedPoolIds.size;
+                const slotsToFill = centerId ? 6 : 7;
+                const solveError = document.getElementById('solve-error');
+                const solveHint = document.getElementById('solve-button-hint');
+
+                let pieceCount, numToChoose;
+
+                if (selectedCount > 0) {
+                    // Use only shapes in the selected pool
+                    const selectedPool = uniqueHexagons.filter(h => selectedPoolIds.has(h.id) && h.id !== centerId);
+                    pieceCount = selectedPool.length;
+                    numToChoose = Math.min(slotsToFill, pieceCount);
+                    
+                    // Special case: if only 1 ToyZ selected, force center placement
+                    if (selectedCount === 1) {
+                        estimationEl.textContent = `Single ToyZ will be placed in center position.`;
+                        solveError.style.display = 'none';
+                        solveBtn.disabled = false;
+                        solveHint.textContent = 'This will place your single ToyZ in the optimal center position.';
+                        return;
+                    }
+                    
+                    // Always allow solving - empty slots will be added automatically if needed
+                    if (pieceCount < slotsToFill) {
+                         estimationEl.textContent = `Note: Only ${pieceCount} shape(s) selected. ${slotsToFill - pieceCount} slot(s) will remain empty.`;
+                         solveError.style.display = 'none';
+                         solveBtn.disabled = false;
+                         solveHint.textContent = `This will optimize the arrangement with ${pieceCount} shape(s) and ${slotsToFill - pieceCount} empty slot(s).`;
+                         const totalSecondsStr = estimateTime(pieceCount, numToChoose);
+                         estimationEl.textContent += ` Estimated time: ${formatSeconds(totalSecondsStr)}`;
+                         return;
+                    }
+
+                    // Normal case with enough pieces
+                    solveBtn.disabled = false;
+                    solveError.style.display = 'none';
+                    solveHint.textContent = 'This will start the search for the best arrangement using shapes from the selected pool.';
+                    const totalSecondsStr = estimateTime(pieceCount, numToChoose);
+                    estimationEl.textContent = `Estimated time: ${formatSeconds(totalSecondsStr)}`;
+
+                } else {
+                    // No shapes in selected pool - cannot solve
+                    estimationEl.textContent = '';
+                    solveError.textContent = "No shapes in the selected pool. Move shapes from the available pool to the selected pool.";
+                    solveError.style.display = 'block';
+                    solveBtn.disabled = true;
+                    solveHint.textContent = 'Move shapes to the selected pool to enable solving.';
+                    return;
+                }
+            }
+
+            function setupInitialData() {
+                hexagonObjects = loadHexagonsFromStorage();
+                selectedPoolIds.clear();
+                tempSelectedIds.clear();
+                populateDropdowns();
+                updateShapePools();
+                populateAddShapeForm();
+                updateEstimationText();
+                updatePoolCounters();
+            }
+
+            function addHexagon() {
+                const id = parseInt(document.getElementById('new-hex-id').value, 10);
+                const label = document.getElementById('new-hex-label').value;
+                const rarity = document.getElementById('new-hex-rarity').value;
+                const element = document.getElementById('new-hex-element').value;
+                const sides = Array.from(document.querySelectorAll('#new-hex-sides select')).map(s => s.value);
+
+                if (!label || !rarity) {
+                    showToast('Please fill all fields for the new hexagon.', 'warning');
+                    return;
+                }
+
+                const newHex = new Hexagon(id, label, rarity, sides, element);
+                hexagonObjects.push(newHex);
+                saveHexagonsToStorage();
+                populateDropdowns();
+                updateShapePools();
+                updateEstimationText();
+                updatePoolCounters();
+                
+                document.getElementById('new-hex-label').value = '';
+                document.getElementById('new-hex-id').value = getNextId();
+                showToast('Hexagon added successfully!', 'success');
+            }
+
+            function addRandomHexagon() {
+                const rarities = Object.keys(rarityValue).filter(r => r !== 'none');
+                const colors = Object.keys(colorMap);
+
+                document.getElementById('new-hex-id').value = getNextId();
+                document.getElementById('new-hex-label').value = `random_${Math.random().toString(36).substring(2, 7)}`;
+                document.getElementById('new-hex-rarity').value = rarities[Math.floor(Math.random() * rarities.length)];
+                document.getElementById('new-hex-element').value = elements[Math.floor(Math.random() * elements.length)];
+                
+                const sideSelectors = document.querySelectorAll('#new-hex-sides select');
+                sideSelectors.forEach(selector => {
+                    selector.value = colors[Math.floor(Math.random() * colors.length)];
+                });
+
+                addHexagon();
+            }
+
+
+            function populateAddShapeForm() {
+                document.getElementById('new-hex-id').value = getNextId();
+                const raritySelect = document.getElementById('new-hex-rarity');
+                raritySelect.innerHTML = '';
+                Object.keys(rarityValue).forEach(rarity => {
+                    if (rarity === 'none') return;
+                    const option = document.createElement('option');
+                    option.value = rarity;
+                    option.textContent = rarity.charAt(0).toUpperCase() + rarity.slice(1);
+                    raritySelect.appendChild(option);
+                });
+
+                const elementSelect = document.getElementById('new-hex-element');
+                elementSelect.innerHTML = '';
+                elements.forEach(element => {
+                    const option = document.createElement('option');
+                    option.value = element;
+                    option.textContent = element.charAt(0).toUpperCase() + element.slice(1);
+                    elementSelect.appendChild(option);
+                });
+
+                const sidesContainer = document.getElementById('new-hex-sides');
+                sidesContainer.innerHTML = '';
+                for (let i = 0; i < 6; i++) {
+                    const sideSelect = document.createElement('select');
+                    sideSelect.className = 'bg-gray-700 border border-gray-600 rounded-md p-2 text-white';
+                    Object.keys(colorMap).forEach(color => {
+                        const option = document.createElement('option');
+                        option.value = color;
+                        option.textContent = color.charAt(0).toUpperCase() + color.slice(1);
+                        sideSelect.appendChild(option);
+                    });
+                    sidesContainer.appendChild(sideSelect);
+                }
+            }
+
+            function populateDropdowns() {
+                const selectedVal = selectEl.value;
+                selectEl.innerHTML = '';
+                const anyOption = document.createElement('option');
+                anyOption.value = "any";
+                anyOption.textContent = "Any (Brute Force All)";
+                selectEl.appendChild(anyOption);
+                
+                // Only show shapes from the selected pool
+                const selectedShapes = hexagonObjects.filter(hex => selectedPoolIds.has(hex.id));
+                selectedShapes.sort((a, b) => (rarityValue[b.rarity] || 0) - (rarityValue[a.rarity] || 0) || a.label.localeCompare(b.label))
+                              .forEach(hex => {
+                    const option = document.createElement('option');
+                    option.value = hex.id;
+                    option.textContent = `${hex.label} (ID: ${hex.id})`;
+                    selectEl.appendChild(option);
+                });
+                
+                // If the previously selected value is no longer in the pool, reset to "any"
+                if (selectedVal && selectedVal !== "any" && !selectedPoolIds.has(parseInt(selectedVal, 10))) {
+                    selectEl.value = "any";
+                } else {
+                    selectEl.value = selectedVal;
+                }
+            }
+
+            function updateShapePools() {
+                availableShapesEl.innerHTML = '';
+                selectedShapesEl.innerHTML = '';
+                
+                // Get current size from slider
+                const shapeSize = parseInt(shapeSizeSlider.value);
+                const hexSize = shapeSize * 0.357; // Proportional to canvas size (50/140)
+                const centerPos = shapeSize / 2;
+                
+                hexagonObjects.forEach(hex => {
+                    const hexContainer = document.createElement('div');
+                    hexContainer.className = 'relative shape-pool-item';
+                    hexContainer.dataset.hexId = hex.id;
+                    
+                    // Check if temporarily selected for transfer
+                    if (tempSelectedIds.has(hex.id)) {
+                        hexContainer.classList.add('selected');
+                    }
+
+                    // Create SVG instead of canvas for shape pool items
+                    const svgContainer = document.createElement('div');
+                    svgContainer.className = 'relative';
+                    svgContainer.style.width = `${shapeSize}px`;
+                    svgContainer.style.height = `${shapeSize}px`;
+                    
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('width', shapeSize);
+                    svg.setAttribute('height', shapeSize);
+                    svg.className = 'rounded-lg border-2 cursor-pointer';
+                    svg.style.borderColor = rarityColor[hex.rarity] || '#374151';
+                    
+                    // Create the hexagon SVG group
+                    const hexagonSVG = createHexagonSVG(centerPos, centerPos, hexSize, hex);
+                    svg.appendChild(hexagonSVG);
+                    
+                    svgContainer.appendChild(svg);
+                    
+                    svgContainer.addEventListener('click', () => {
+                        // Toggle selection for transfer
+                        if (tempSelectedIds.has(hex.id)) {
+                            tempSelectedIds.delete(hex.id);
+                            hexContainer.classList.remove('selected');
+                        } else {
+                            tempSelectedIds.add(hex.id);
+                            hexContainer.classList.add('selected');
+                        }
+                        
+                        // Update editing form if any ToyZ are selected
+                        updateEditingForm();
+                    });
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'X';
+                    deleteBtn.className = 'absolute top-0 right-0 bg-red-600 hover:bg-red-700 text-white font-bold w-6 h-6 rounded-full flex items-center justify-center text-xs z-10';
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        if (confirm(`Are you sure you want to delete hexagon "${hex.label}"?`)) {
+                            deleteHexagon(hex.id);
+                        }
+                    };
+                    
+                    // Note: ToyZ with icons don't need HTML overlays since the SVG already contains the icon and text
+                    
+                    hexContainer.appendChild(svgContainer);
+                    hexContainer.appendChild(deleteBtn);
+                    
+                    // Add to appropriate pool
+                    if (selectedPoolIds.has(hex.id)) {
+                        selectedShapesEl.appendChild(hexContainer);
+                    } else {
+                        availableShapesEl.appendChild(hexContainer);
+                    }
+                });
+                
+                updatePoolCounters();
+            }
+
+            function deleteHexagon(id) {
+                selectedPoolIds.delete(id);
+                tempSelectedIds.delete(id);
+                const index = hexagonObjects.findIndex(h => h.id === id);
+                if (index > -1) {
+                    const deletedHex = hexagonObjects[index];
+                    hexagonObjects.splice(index, 1);
+                    saveHexagonsToStorage();
+                    updateShapePools();
+                    populateDropdowns();  // This will now only show shapes from selected pool
+                    document.getElementById('new-hex-id').value = getNextId();
+                    updateEstimationText();
+                    updatePoolCounters();
+                    showToast(`Hexagon "${deletedHex.label}" deleted successfully.`, 'success');
+                }
+            }
+
+            // ToyZ autocomplete event listeners
+            document.getElementById('toyz-search').addEventListener('input', (e) => {
+                const query = e.target.value;
+                const suggestions = searchToyZ(query);
+                displayToyZSuggestions(suggestions);
+            });
+            
+            // Manual label input listener
+            document.getElementById('new-hex-label').addEventListener('input', (e) => {
+                const hasText = e.target.value.trim().length > 0;
+                const manualEntry = document.getElementById('manual-entry');
+                
+                // Only show manual entry if there's text AND no ToyZ is selected from database
+                if (hasText && !selectedToyZ) {
+                    // Show manual entry fields when typing directly in label (not from database)
+                    manualEntry.style.display = 'block';
+                    setupManualBuffInputs();
+                    // Auto-set ID for manual entry
+                    if (!document.getElementById('new-hex-id').value) {
+                        document.getElementById('new-hex-id').value = getNextId();
+                    }
+                } else if (!hasText || selectedToyZ) {
+                    // Hide manual entry fields when label is empty OR when ToyZ is selected
+                    manualEntry.style.display = 'none';
+                }
+            });
+            
+            // Level change listener to update buff availability
+            document.getElementById('toyz-level').addEventListener('change', () => {
+                if (document.getElementById('manual-entry').style.display !== 'none') {
+                    setupManualBuffInputs();
+                }
+            });
+            
+            
+            document.getElementById('clear-selection').addEventListener('click', () => {
+                clearToyZSelection();
+            });
+            
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#toyz-search') && !e.target.closest('#toyz-suggestions')) {
+                    document.getElementById('toyz-suggestions').style.display = 'none';
+                }
+            });
+            
+            // Modified addHexagon function to handle ToyZ data
+            function addToyZHexagon() {
+                if (selectedToyZ) {
+                    // Add from ToyZ database - use sides from form
+                    const id = parseInt(document.getElementById('new-hex-id').value, 10);
+                    const level = parseInt(document.getElementById('toyz-level').value);
+                    const sides = getSidesFromForm(); // Use user-selected sides
+                    const mappedElement = elementMapping[selectedToyZ.element] || selectedToyZ.element.toLowerCase();
+                    
+                    const newHex = new Hexagon(
+                        id,
+                        selectedToyZ.name,
+                        selectedToyZ.rarity.toLowerCase(),
+                        sides,
+                        mappedElement
+                    );
+                    
+                    // Store ToyZ info for potential buff calculations later
+                    newHex.toyzData = selectedToyZ;
+                    newHex.toyzLevel = level; // Store actual level (first buff available at level 0)
+                        
+                    hexagonObjects.push(newHex);
+                    saveHexagonsToStorage();
+                    populateDropdowns();
+                    updateShapePools();
+                    updateEstimationText();
+                    updatePoolCounters();
+                    
+                    showToast(`Added ${selectedToyZ.name} (Level ${level}) to collection!`, 'success');
+                    
+                    // Clear form and reset state
+                    selectedToyZ = null;
+                    document.getElementById('toyz-search').value = '';
+                    document.getElementById('new-hex-label').value = '';
+                    document.getElementById('new-hex-id').value = getNextId();
+                    document.getElementById('toyz-suggestions').style.display = 'none';
+                    // Ensure manual entry stays hidden for database ToyZ
+                    document.getElementById('manual-entry').style.display = 'none';
+                } else {
+                    // Check if this is a manual custom ToyZ with buffs
+                    const manualEntry = document.getElementById('manual-entry');
+                    const isManualEntry = manualEntry.style.display !== 'none';
+                    
+                    if (isManualEntry) {
+                        // Add custom ToyZ with manual buffs
+                        addCustomToyZHexagon();
+                    } else {
+                        // Add regular manually entered hexagon
+                        addHexagon();
+                    }
+                }
+            }
+            
+            function addCustomToyZHexagon() {
+                const id = parseInt(document.getElementById('new-hex-id').value, 10);
+                const label = document.getElementById('new-hex-label').value;
+                const rarity = document.getElementById('new-hex-rarity').value;
+                const element = document.getElementById('new-hex-element').value;
+                const level = parseInt(document.getElementById('toyz-level').value);
+                const sides = Array.from(document.querySelectorAll('#new-hex-sides select')).map(s => s.value);
+
+                if (!label || !rarity) {
+                    showToast('Please fill all required fields for the custom ToyZ.', 'warning');
+                    return;
+                }
+
+                // Collect manual buffs
+                const customBuffs = [];
+                for (let i = 1; i <= 4; i++) {
+                    const typeSelect = document.getElementById(`buff-type-${i}`);
+                    const valueInput = document.getElementById(`buff-value-${i}`);
+                    
+                    if (typeSelect && valueInput && !typeSelect.disabled && typeSelect.value && valueInput.value) {
+                        customBuffs.push({
+                            type: typeSelect.value,
+                            value: parseInt(valueInput.value)
+                        });
+                    }
+                }
+
+                const newHex = new Hexagon(id, label, rarity, sides, element);
+                
+                // Create custom ToyZ data structure
+                const customToyZData = {
+                    name: label,
+                    rarity: rarity.charAt(0).toUpperCase() + rarity.slice(1),
+                    element: element.charAt(0).toUpperCase() + element.slice(1),
+                    buffs: customBuffs,
+                    icon: null // No icon for custom ToyZ
+                };
+                
+                // Store custom ToyZ info
+                newHex.toyzData = customToyZData;
+                newHex.toyzLevel = level;
+                
+                hexagonObjects.push(newHex);
+                saveHexagonsToStorage();
+                populateDropdowns();
+                updateShapePools();
+                updateEstimationText();
+                updatePoolCounters();
+                
+                // Clear form
+                document.getElementById('new-hex-label').value = '';
+                document.getElementById('new-hex-id').value = getNextId();
+                document.getElementById('manual-entry').style.display = 'none';
+                
+                const buffSummary = customBuffs.length > 0 ? ` with ${customBuffs.length} buff(s)` : '';
+                showToast(`Added custom ToyZ "${label}" (Level ${level})${buffSummary} to collection!`, 'success');
+            }
+            
+            function updateEditingForm() {
+                // Get the last selected ToyZ for editing
+                if (tempSelectedIds.size === 0) {
+                    // No selection - clear editing state
+                    if (editingToyZ) {
+                        clearToyZSelection();
+                    }
+                    return;
+                }
+                
+                // Get the last selected ToyZ (most recently clicked)
+                const selectedIds = Array.from(tempSelectedIds);
+                const lastSelectedId = selectedIds[selectedIds.length - 1];
+                const toyZToEdit = hexagonObjects.find(h => h.id === lastSelectedId);
+                
+                if (!toyZToEdit) return;
+                
+                // Set editing state
+                editingToyZ = toyZToEdit;
+                selectedToyZ = null; // Clear database selection
+                
+                // Fill form with existing ToyZ data
+                document.getElementById('new-hex-id').value = toyZToEdit.id;
+                document.getElementById('new-hex-label').value = toyZToEdit.label;
+                document.getElementById('new-hex-rarity').value = toyZToEdit.rarity;
+                document.getElementById('new-hex-element').value = toyZToEdit.element;
+                
+                // Fill sides
+                const sideSelectors = document.querySelectorAll('#new-hex-sides select');
+                toyZToEdit.sides.forEach((side, index) => {
+                    if (sideSelectors[index]) {
+                        sideSelectors[index].value = side;
+                    }
+                });
+                
+                // Fill ToyZ level if available
+                if (toyZToEdit.toyzLevel !== undefined) {
+                    document.getElementById('toyz-level').value = toyZToEdit.toyzLevel;
+                }
+                
+                // Handle ToyZ data
+                if (toyZToEdit.toyzData) {
+                    // Check if this is a database ToyZ or custom ToyZ
+                    if (toyZToEdit.toyzData.icon) {
+                        // Database ToyZ - fill search field and hide manual entry
+                        document.getElementById('toyz-search').value = toyZToEdit.toyzData.name;
+                        selectedToyZ = toyZToEdit.toyzData;
+                        document.getElementById('manual-entry').style.display = 'none';
+                    } else {
+                        // Custom ToyZ - show manual entry and fill buffs
+                        document.getElementById('toyz-search').value = '';
+                        document.getElementById('manual-entry').style.display = 'block';
+                        setupManualBuffInputs();
+                        
+                        // Fill existing buffs
+                        if (toyZToEdit.toyzData.buffs && toyZToEdit.toyzData.buffs.length > 0) {
+                            toyZToEdit.toyzData.buffs.forEach((buff, index) => {
+                                const buffNum = index + 1;
+                                const typeSelect = document.getElementById(`buff-type-${buffNum}`);
+                                const valueInput = document.getElementById(`buff-value-${buffNum}`);
+                                
+                                if (typeSelect && !typeSelect.disabled && valueInput) {
+                                    typeSelect.value = buff.type;
+                                    valueInput.value = buff.value;
+                                }
+                            });
+                        }
+                    }
+                } else {
+                    // Regular hexagon without ToyZ data
+                    document.getElementById('toyz-search').value = '';
+                    document.getElementById('manual-entry').style.display = 'none';
+                }
+                
+                // Show update button, hide add button
+                document.getElementById('add-shape-button').style.display = 'none';
+                document.getElementById('update-shape-button').style.display = 'inline-block';
+                
+                showToast(`Editing ToyZ: ${toyZToEdit.label} (ID: ${toyZToEdit.id})`, 'info');
+            }
+            
+            function updateToyZHexagon() {
+                if (!editingToyZ) {
+                    showToast('No ToyZ selected for editing.', 'warning');
+                    return;
+                }
+                
+                const id = parseInt(document.getElementById('new-hex-id').value, 10);
+                const label = document.getElementById('new-hex-label').value;
+                const rarity = document.getElementById('new-hex-rarity').value;
+                const element = document.getElementById('new-hex-element').value;
+                const level = parseInt(document.getElementById('toyz-level').value);
+                const sides = Array.from(document.querySelectorAll('#new-hex-sides select')).map(s => s.value);
+                
+                if (!label || !rarity) {
+                    showToast('Please fill all required fields for the ToyZ.', 'warning');
+                    return;
+                }
+                
+                // Find and update the existing hexagon
+                const index = hexagonObjects.findIndex(h => h.id === editingToyZ.id);
+                if (index === -1) {
+                    showToast('Original ToyZ not found.', 'warning');
+                    return;
+                }
+                
+                // Update the hexagon
+                const updatedHex = new Hexagon(id, label, rarity, sides, element);
+                
+                if (selectedToyZ) {
+                    // Database ToyZ - preserve ToyZ data from database
+                    updatedHex.toyzData = selectedToyZ;
+                    updatedHex.toyzLevel = level;
+                } else {
+                    // Check if manual entry is visible (custom ToyZ)
+                    const manualEntry = document.getElementById('manual-entry');
+                    const isManualEntry = manualEntry.style.display !== 'none';
+                    
+                    if (isManualEntry) {
+                        // Custom ToyZ - collect manual buffs
+                        const customBuffs = [];
+                        for (let i = 1; i <= 4; i++) {
+                            const typeSelect = document.getElementById(`buff-type-${i}`);
+                            const valueInput = document.getElementById(`buff-value-${i}`);
+                            
+                            if (typeSelect && valueInput && !typeSelect.disabled && typeSelect.value && valueInput.value) {
+                                customBuffs.push({
+                                    type: typeSelect.value,
+                                    value: parseInt(valueInput.value)
+                                });
+                            }
+                        }
+                        
+                        // Create custom ToyZ data structure
+                        const customToyZData = {
+                            name: label,
+                            rarity: rarity.charAt(0).toUpperCase() + rarity.slice(1),
+                            element: element.charAt(0).toUpperCase() + element.slice(1),
+                            buffs: customBuffs,
+                            icon: null // No icon for custom ToyZ
+                        };
+                        
+                        updatedHex.toyzData = customToyZData;
+                        updatedHex.toyzLevel = level;
+                    } else if (editingToyZ.toyzData) {
+                        // Preserve existing ToyZ data if no new selection
+                        updatedHex.toyzData = editingToyZ.toyzData;
+                        updatedHex.toyzLevel = level;
+                    }
+                }
+                
+                // Replace the hexagon in the array
+                hexagonObjects[index] = updatedHex;
+                
+                // Update storage and UI
+                saveHexagonsToStorage();
+                populateDropdowns();
+                updateShapePools();
+                updateEstimationText();
+                updatePoolCounters();
+                
+                // Clear editing state
+                tempSelectedIds.clear();
+                editingToyZ = null;
+                selectedToyZ = null;
+                
+                // Reset form
+                document.getElementById('new-hex-label').value = '';
+                document.getElementById('new-hex-id').value = getNextId();
+                document.getElementById('toyz-search').value = '';
+                document.getElementById('manual-entry').style.display = 'none';
+                document.getElementById('add-shape-button').style.display = 'inline-block';
+                document.getElementById('update-shape-button').style.display = 'none';
+                
+                showToast(`Updated ToyZ: ${label} successfully!`, 'success');
+            }
+
+            addShapeBtn.addEventListener('click', addToyZHexagon);
+            document.getElementById('update-shape-button').addEventListener('click', updateToyZHexagon);
+            addRandomShapeBtn.addEventListener('click', addRandomHexagon);
+            selectEl.addEventListener('change', () => {
+                updateEstimationText();
+            });
+            
+            // Add event listeners for transfer buttons
+            moveToSelectedBtn.addEventListener('click', () => {
+                tempSelectedIds.forEach(id => {
+                    selectedPoolIds.add(id);
+                });
+                tempSelectedIds.clear();
+                updateShapePools();
+                populateDropdowns();  // Update center piece dropdown
+                updateEstimationText();
+            });
+            
+            moveToAvailableBtn.addEventListener('click', () => {
+                tempSelectedIds.forEach(id => {
+                    selectedPoolIds.delete(id);
+                });
+                tempSelectedIds.clear();
+                updateShapePools();
+                populateDropdowns();  // Update center piece dropdown
+                updateEstimationText();
+            });
+            
+            // Add event listeners for move all buttons
+            moveAllToSelectedBtn.addEventListener('click', () => {
+                // Move all shapes to selected pool
+                hexagonObjects.forEach(hex => {
+                    selectedPoolIds.add(hex.id);
+                });
+                tempSelectedIds.clear();
+                updateShapePools();
+                populateDropdowns();  // Update center piece dropdown
+                updateEstimationText();
+                showToast('All Toyz moved to battle position!', 'success');
+            });
+            
+            moveAllToAvailableBtn.addEventListener('click', () => {
+                // Move all shapes to available pool
+                selectedPoolIds.clear();
+                tempSelectedIds.clear();
+                updateShapePools();
+                populateDropdowns();  // Update center piece dropdown
+                updateEstimationText();
+                showToast('All Toyz returned to inventory!', 'success');
+            });
+            
+            // Delete all available Toyz functionality
+            const deleteAllAvailableBtn = document.getElementById('delete-all-available');
+            const deleteConfirmationModal = document.getElementById('delete-confirmation-modal');
+            const cancelDeleteBtn = document.getElementById('cancel-delete');
+            const confirmDeleteBtn = document.getElementById('confirm-delete');
+            
+            deleteAllAvailableBtn.addEventListener('click', () => {
+                // Show confirmation modal
+                deleteConfirmationModal.classList.remove('hidden');
+            });
+            
+            cancelDeleteBtn.addEventListener('click', () => {
+                // Hide confirmation modal
+                deleteConfirmationModal.classList.add('hidden');
+            });
+            
+            confirmDeleteBtn.addEventListener('click', () => {
+                // Delete all Toyz from available pool
+                const availableIds = hexagonObjects
+                    .filter(hex => !selectedPoolIds.has(hex.id))
+                    .map(hex => hex.id);
+                
+                // If there are no available Toyz, show message and close modal
+                if (availableIds.length === 0) {
+                    deleteConfirmationModal.classList.add('hidden');
+                    showToast('No Toyz in the available pool to delete.', 'warning');
+                    return;
+                }
+                
+                // Remove each Toyz from hexagonObjects
+                for (let i = hexagonObjects.length - 1; i >= 0; i--) {
+                    if (!selectedPoolIds.has(hexagonObjects[i].id)) {
+                        hexagonObjects.splice(i, 1);
+                    }
+                }
+                
+                tempSelectedIds.clear();
+                saveHexagonsToStorage();
+                updateShapePools();
+                populateDropdowns();
+                updateEstimationText();
+                updatePoolCounters();
+                document.getElementById('new-hex-id').value = getNextId();
+                
+                // Hide modal and show success message
+                deleteConfirmationModal.classList.add('hidden');
+                showToast(`Successfully deleted ${availableIds.length} Toyz from the available pool.`, 'success');
+            });
+            
+            // Close modal if user clicks outside of it
+            deleteConfirmationModal.addEventListener('click', (e) => {
+                if (e.target === deleteConfirmationModal) {
+                    deleteConfirmationModal.classList.add('hidden');
+                }
+            });
+
+            const colors = ['red', 'blue', 'purple', 'gray', 'yellow'];
+            for(let i = 1; i <= 3; i++) {
+                const prioritySelect = document.createElement('select');
+                prioritySelect.id = `color-priority-${i}`;
+                prioritySelect.className = "bg-gray-700 border border-gray-600 text-white rounded-md p-2";
+                const defaultOption = document.createElement('option');
+                defaultOption.value = "none";
+                defaultOption.textContent = i === 1 ? '1st' : (i === 2 ? '2nd' : '3rd');
+                prioritySelect.appendChild(defaultOption);
+                colors.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c.charAt(0).toUpperCase() + c.slice(1);
+                    prioritySelect.appendChild(opt);
+                });
+                colorPriorityControls.appendChild(prioritySelect);
+            }
+
+            for(let i = 1; i <= 3; i++) {
+                const prioritySelect = document.createElement('select');
+                prioritySelect.id = `element-priority-${i}`;
+                prioritySelect.className = "bg-gray-700 border border-gray-600 text-white rounded-md p-2";
+                const defaultOption = document.createElement('option');
+                defaultOption.value = "none";
+                defaultOption.textContent = i === 1 ? '1st' : (i === 2 ? '2nd' : '3rd');
+                prioritySelect.appendChild(defaultOption);
+                elements.forEach(e => {
+                    const opt = document.createElement('option');
+                    opt.value = e;
+                    opt.textContent = e.charAt(0).toUpperCase() + e.slice(1);
+                    prioritySelect.appendChild(opt);
+                });
+                elementPriorityControls.appendChild(prioritySelect);
+            }
+
+            function updateDisplay(gridNum, bestLayouts, page = 1) {
+                if (gridNum === 1) currentPageGrid1 = page;
+                if (gridNum === 2) currentPageGrid2 = page;
+
+                const gridLayoutContainer = document.getElementById(`grid${gridNum}-layouts`);
+                const paginationContainer = document.getElementById(`grid${gridNum}-pagination`);
+                gridLayoutContainer.innerHTML = '';
+                paginationContainer.innerHTML = '';
+
+                const tiebreakMode = document.querySelector('input[name="tiebreak-mode"]:checked').value;
+                const colorPriority = [];
+                const elementPriority = [];
+
+                if (tiebreakMode === 'color') {
+                    for(let i = 1; i <= 3; i++) {
+                        const val = document.getElementById(`color-priority-${i}`).value;
+                        if (val !== 'none') colorPriority.push(val);
+                    }
+                } else if (tiebreakMode === 'element') {
+                    for(let i = 1; i <= 3; i++) {
+                        const val = document.getElementById(`element-priority-${i}`).value;
+                        if (val !== 'none') elementPriority.push(val);
+                    }
+                }
+                const sortedLayouts = applyTieBreaking(bestLayouts, tiebreakMode, colorPriority, elementPriority);
+                
+                const totalPages = Math.ceil(sortedLayouts.length / LAYOUTS_PER_PAGE);
+                const startIndex = (page - 1) * LAYOUTS_PER_PAGE;
+                const endIndex = startIndex + LAYOUTS_PER_PAGE;
+                const paginatedLayouts = sortedLayouts.slice(startIndex, endIndex);
+
+                paginatedLayouts.forEach((layout, index) => {
+                    const originalIndex = startIndex + index;
+                    const container = document.createElement('div');
+                    container.className = 'layout-container';
+                    container.dataset.layoutIndex = originalIndex;
+
+                    if (gridNum === 1) {
+                        container.addEventListener('click', () => {
+                            const selected = document.querySelector(`#grid1-layouts .layout-container.selected`);
+                            if (selected) selected.classList.remove('selected');
+                            container.classList.add('selected');
+                            document.getElementById('solve-second-grid-button').disabled = false;
+                        });
+                    }
+
+                    const title = document.createElement('h3');
+                    title.className = 'font-semibold text-lg';
+                    title.textContent = `Layout #${originalIndex + 1}`;
+                    container.appendChild(title);
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 400;
+                    canvas.height = 400;
+                    container.appendChild(canvas);
+
+                    const summaryDiv = document.createElement('div');
+                    summaryDiv.className = 'text-xs mt-2';
+                    container.appendChild(summaryDiv);
+
+                    gridLayoutContainer.appendChild(container);
+
+                    drawArrangement(canvas.getContext('2d'), layout.arrangement, 'Error', container);
+                    
+                    // Recalculate layout data including buffs for this specific layout
+                    const layoutData = calculateArrangementScore(layout.arrangement);
+                    
+                    let summaryHTML = '';
+                    
+                    // Add buff summary (both ToyZ buffs and layout buffs from color matches)
+                    if (layoutData.buffSummary && Object.keys(layoutData.buffSummary.buffTotals).length > 0) {
+                        summaryHTML += '<div class="mb-2 p-2 bg-gray-900 rounded text-xs">';
+                        summaryHTML += '<div class="font-semibold text-green-400 mb-1">Total Buffs:</div>';
+                        
+                        // Separate ToyZ buffs, layout buffs, and element buffs
+                        const toyzBuffs = {};
+                        const layoutBuffs = {};
+                        const elementBuffs = {};
+                        
+                        for (const buffName in layoutData.buffSummary.buffTotals) {
+                            const buff = layoutData.buffSummary.buffTotals[buffName];
+                            if (buffName.includes('(Layout)')) {
+                                layoutBuffs[buffName] = buff;
+                            } else if (buffName.includes('(Element)')) {
+                                elementBuffs[buffName] = buff;
+                            } else {
+                                toyzBuffs[buffName] = buff;
+                            }
+                        }
+                        
+                        // Show ToyZ buffs first
+                        if (Object.keys(toyzBuffs).length > 0) {
+                            summaryHTML += '<div class="text-yellow-300 text-xs mb-1">ToyZ Buffs:</div>';
+                            for (const buffName in toyzBuffs) {
+                                const buff = toyzBuffs[buffName];
+                                const formattedValue = Number(buff.value).toFixed(1).replace(/\.0$/, '');
+                                summaryHTML += `<div class="text-green-300 ml-1">• ${buffName}: +${formattedValue}% (from ${buff.count} ToyZ)</div>`;
+                            }
+                        }
+                        
+                        // Show layout buffs second
+                        if (Object.keys(layoutBuffs).length > 0) {
+                            summaryHTML += '<div class="text-blue-300 text-xs mb-1 mt-1">Layout Buffs:</div>';
+                            for (const buffName in layoutBuffs) {
+                                const buff = layoutBuffs[buffName];
+                                const cleanName = buffName.replace(' (Layout)', '');
+                                const formattedValue = Number(buff.value).toFixed(1).replace(/\.0$/, '');
+                                summaryHTML += `<div class="text-cyan-300 ml-1">• ${cleanName}: +${formattedValue}% (${buff.count} matches)</div>`;
+                            }
+                        }
+                        
+                        // Show element buffs third
+                        if (Object.keys(elementBuffs).length > 0) {
+                            summaryHTML += '<div class="text-purple-300 text-xs mb-1 mt-1">Element Bonuses:</div>';
+                            for (const buffName in elementBuffs) {
+                                const buff = elementBuffs[buffName];
+                                const cleanName = buffName.replace(' (Element)', '');
+                                const formattedValue = Number(buff.value).toFixed(0);
+                                summaryHTML += `<div class="text-purple-200 ml-1">• ${cleanName}: +${formattedValue}% (${buff.count} ToyZ)</div>`;
+                            }
+                        }
+                        
+                        summaryHTML += '</div>';
+                    }
+                    summaryHTML += '</div><div class="mt-1 flex flex-wrap items-center justify-center gap-2">';
+                     for (const element in layoutData.elementCounts) {
+                        if (layoutData.elementCounts[element] > 0) {
+                            // Find element key for database lookup
+                            const elementKey = Object.keys(elementMapping).find(key => 
+                                elementMapping[key] === element
+                            ) || element.charAt(0).toUpperCase() + element.slice(1);
+                            
+                            if (typeof TOYZ_DATABASE !== 'undefined' && TOYZ_DATABASE.elements && TOYZ_DATABASE.elements[elementKey]) {
+                                const elementData = TOYZ_DATABASE.elements[elementKey];
+                                summaryHTML += `<span class="inline-flex items-center gap-1 mx-1">`;
+                                summaryHTML += `<img src="${elementData.icon}" class="w-4 h-4" alt="${elementKey}" style="background-color: ${elementData.color || elementColors[element]}; border-radius: 2px; padding: 1px;">`;
+                                summaryHTML += `<span class="text-xs" style="color:${elementColors[element] || '#fff'}">${layoutData.elementCounts[element]}</span>`;
+                                summaryHTML += `</span>`;
+                            } else {
+                                // Fallback to text if element icon not available
+                                summaryHTML += `<span class="inline-block mx-2" style="color:${elementColors[element] || '#fff'}">${element.charAt(0).toUpperCase() + element.slice(1)}: ${layoutData.elementCounts[element]}</span>`;
+                            }
+                        }
+                    }
+                    summaryHTML += '</div>';
+                    
+                    summaryDiv.innerHTML = summaryHTML;
+                });
+
+                if (totalPages > 1) {
+                    const createButton = (text, pageNum, isDisabled = false, isCurrent = false, isEllipsis = false) => {
+                        const button = document.createElement('button');
+                        button.innerHTML = text;
+                        let classes = 'py-2 px-4 font-bold text-white';
+                        if (isEllipsis) {
+                            classes += ' bg-gray-600 cursor-default';
+                        } else if (isCurrent) {
+                            classes += ' current-page';
+                        } else if (isDisabled) {
+                            classes += ' bg-gray-600 opacity-50 cursor-not-allowed';
+                        } else {
+                            classes += ' bg-gray-600 hover:bg-gray-700';
+                        }
+                        button.className = classes;
+                        if (!isDisabled && !isCurrent && !isEllipsis) {
+                            button.addEventListener('click', () => updateDisplay(gridNum, bestLayouts, pageNum));
+                        }
+                        return button;
+                    };
+
+                    const prevButton = createButton('&larr;', page - 1, page === 1);
+                    prevButton.classList.add('rounded-l-md');
+                    paginationContainer.appendChild(prevButton);
+
+                    const pagesToShow = [];
+                    if (totalPages <= 7) {
+                        for (let i = 1; i <= totalPages; i++) {
+                            pagesToShow.push(i);
+                        }
+                    } else {
+                        pagesToShow.push(1);
+                        if (page > 3) pagesToShow.push('...');
+                        if (page > 2) pagesToShow.push(page - 1);
+                        if (page !== 1 && page !== totalPages) pagesToShow.push(page);
+                        if (page < totalPages - 1) pagesToShow.push(page + 1);
+                        if (page < totalPages - 2) pagesToShow.push('...');
+                        pagesToShow.push(totalPages);
+                    }
+                    
+                    [...new Set(pagesToShow)].forEach(p => {
+                        paginationContainer.appendChild(p === '...' ? createButton('...', 0, false, false, true) : createButton(p, p, false, p === page));
+                    });
+                    
+                    const nextButton = createButton('&rarr;', page + 1, page === totalPages);
+                    nextButton.classList.add('rounded-r-md');
+                    paginationContainer.appendChild(nextButton);
+                }
+            }
+
+            tiebreakFieldset.addEventListener('change', () => {
+                const tiebreakMode = document.querySelector('input[name="tiebreak-mode"]:checked').value;
+                colorPriorityControls.style.display = tiebreakMode === 'color' ? 'flex' : 'none';
+                elementPriorityControls.style.display = tiebreakMode === 'element' ? 'flex' : 'none';
+                updateDisplay(1, allBestLayoutsGrid1, 1);
+                updateDisplay(2, allBestLayoutsGrid2, 1);
+            });
+
+            const runSolver = async () => {
+                solveBtn.disabled = true;
+                tiebreakFieldset.disabled = true;
+                document.getElementById('solve-second-grid-button').style.display = 'none';
+                secondGridContainer.style.display = 'none';
+                document.getElementById('grid1-layouts').innerHTML = '';
+                document.getElementById('grid2-layouts').innerHTML = '';
+                document.getElementById('grid1-pagination').innerHTML = '';
+                document.getElementById('grid2-pagination').innerHTML = '';
+                document.getElementById('grid1-title').style.display = 'none';
+
+                scoreEl.textContent = 'Calculating...';
+                resultsSummary1.textContent = '';
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '0%';
+
+                const selectedValue = selectEl.value;
+                let centerId = selectedValue === "any" ? null : parseInt(selectedValue, 10);
+                const searchMode = document.querySelector('input[name="search-mode"]:checked').value;
+
+                const { uniqueHexagons, sidePatternGroups } = preprocessHexagons(hexagonObjects);
+
+                // Use only the shapes in the selected pool
+                let pool = uniqueHexagons.filter(h => selectedPoolIds.has(h.id));
+                const forcedIds = new Set();
+                
+                // Special handling for single ToyZ: force it to center
+                // Check if we only have one shape in the selected pool (before preprocessing)
+                const selectedShapesForSolving = hexagonObjects.filter(h => selectedPoolIds.has(h.id));
+                if (selectedShapesForSolving.length === 1 && !centerId) {
+                    const singleToyZ = selectedShapesForSolving[0];
+                    if (singleToyZ) {
+                        centerId = singleToyZ.id;
+                        // Make sure this ToyZ is in the pool for solving
+                        if (!pool.some(h => h.id === centerId)) {
+                            const centerHex = uniqueHexagons.find(h => h.id === centerId);
+                            if (centerHex) {
+                                pool = [centerHex]; // Pool should only contain the center piece for single ToyZ
+                            }
+                        }
+                    }
+                }
+                
+                // If a center piece is selected, ensure it's in the pool
+                if (centerId) {
+                    const centerHexInPool = pool.find(h => h.id === centerId);
+                    if (!centerHexInPool) {
+                        const centerHex = uniqueHexagons.find(h => h.id === centerId);
+                        if (centerHex) {
+                            pool.push(centerHex);
+                        }
+                    }
+                    // Don't remove center piece from pool - the solver expects it there
+                }
+
+                const estimationText1 = document.getElementById('estimation-text1');
+                
+                const totalSecondsStr = estimationText1.textContent.replace('Estimated time: ', '').replace('Single ToyZ will be placed in center position.', 'less than a second');
+                
+                const { score, arrangements: baseArrangements } = await findAllBestArrangements(pool, centerId, searchMode, (progress, count, total) => {
+                    progressBar.style.width = `${progress * 100}%`;
+                    if (selectedPoolIds.size === 1) {
+                        estimationText1.textContent = 'Placing single ToyZ in center...';
+                        progressText.textContent = 'Creating optimal single-ToyZ layout...';
+                    } else {
+                        const remainingSecondsStr = multiplyBigInt(totalSecondsStr, Math.round((1 - progress) * 100));
+                        const finalSecondsStr = divideBigInt(remainingSecondsStr, 100).quotient;
+                        estimationText1.textContent = `Time remaining: ${formatSeconds(finalSecondsStr)}`;
+                        progressText.textContent = total > 0 
+                            ? `Checked ${count.toLocaleString()} / ${total.toLocaleString()} permutations...`
+                            : `Evaluated ${count.toLocaleString()} arrangements...`;
+                    }
+                }, forcedIds);
+                
+                const arrangements = expandArrangements(baseArrangements, sidePatternGroups);
+                allBestLayoutsGrid1 = arrangements;
+                progressContainer.style.display = 'none';
+                progressText.textContent = '';
+                scoreEl.textContent = `Maximum Stat Boost Score: ${score}`;
+                resultsSummary1.textContent = `Found ${arrangements.length} layout(s) with this score.`;
+                updateEstimationText();
+                
+                if (arrangements.length > 0) {
+                    document.getElementById('grid1-title').style.display = 'block';
+                    updateDisplay(1, allBestLayoutsGrid1, 1);
+                    document.getElementById('solve-second-grid-button').style.display = 'none';
+                    document.getElementById('solve-second-grid-hint').style.display = 'none';
+                } else {
+                    scoreEl.textContent += ' - No arrangements found.';
+                }
+
+                solveBtn.disabled = false;
+                tiebreakFieldset.disabled = false;
+            };
+
+            const runSecondGridSolver = async () => {
+                const selectedLayoutElement = document.querySelector('#grid1-layouts .layout-container.selected');
+                if (!selectedLayoutElement) {
+                    showToast('Please select a layout from the main grid first.', 'warning');
+                    return;
+                }
+
+                document.getElementById('solve-second-grid-button').disabled = true;
+                secondGridContainer.style.display = 'block';
+                scoreEl2.innerHTML = `<h2 class="text-xl font-semibold text-gray-300 mt-4">Second Grid</h2>Calculating...`;
+                resultsSummary2.textContent = '';
+                progressContainer2.style.display = 'block';
+                progressBar2.style.width = '0%';
+                document.getElementById('grid2-layouts').innerHTML = '';
+                document.getElementById('grid2-pagination').innerHTML = '';
+
+                const selectedLayoutIndex = parseInt(selectedLayoutElement.dataset.layoutIndex, 10);
+                const sortedLayouts = applyTieBreaking(allBestLayoutsGrid1, document.querySelector('input[name="tiebreak-mode"]:checked').value);
+                const selectedLayout = sortedLayouts[selectedLayoutIndex];
+                const usedIds = new Set(Object.values(selectedLayout.arrangement).map(hex => hex.id));
+                const remainingHexagons = hexagonObjects.filter(hex => !usedIds.has(hex.id));
+                const searchMode = document.querySelector('input[name="search-mode"]:checked').value;
+                const estimationText2 = document.getElementById('estimation-text2');
+                const numToChooseForSecondGrid = Math.min(remainingHexagons.length, 7);
+
+                if (numToChooseForSecondGrid > 0) {
+                    const { uniqueHexagons: uniqueRemaining, sidePatternGroups: remainingGroups } = preprocessHexagons(remainingHexagons);
+                    if (uniqueRemaining.length > 0) {
+                        const totalSecondsStr2 = estimateTime(uniqueRemaining.length, numToChooseForSecondGrid);
+                        estimationText2.textContent = `Estimated time: ${formatSeconds(totalSecondsStr2)}`;
+
+                        const { score: score2, arrangements: baseArrangements2 } = await findAllBestArrangements(uniqueRemaining, null, searchMode, (progress, count, total) => {
+                            progressBar2.style.width = `${progress * 100}%`;
+                            const remainingSecondsStr = multiplyBigInt(totalSecondsStr2, Math.round((1 - progress) * 100));
+                            const finalSecondsStr = divideBigInt(remainingSecondsStr, 100).quotient;
+                            estimationText2.textContent = `Time remaining: ${formatSeconds(finalSecondsStr)}`;
+
+                            progressText2.textContent = total > 0
+                                ? `Checked ${count.toLocaleString()} / ${total.toLocaleString()} permutations...`
+                                : `Evaluated ${count.toLocaleString()} arrangements...`;
+                        });
+
+                        const arrangements2 = expandArrangements(baseArrangements2, remainingGroups);
+                        allBestLayoutsGrid2 = arrangements2;
+                        scoreEl2.innerHTML = `<h2 class="text-xl font-semibold text-gray-300 mt-4">Second Grid</h2>Maximum Stat Boost Score: ${score2}`;
+                        resultsSummary2.textContent = `Found ${arrangements2.length} layout(s) with this score.`;
+                        estimationText2.textContent = '';
+                        updateDisplay(2, allBestLayoutsGrid2, 1);
+                    } else {
+                        scoreEl2.innerHTML = `<h2 class="text-xl font-semibold text-gray-300 mt-4">Second Grid</h2>`;
+                        resultsSummary2.textContent = 'Not enough unique pieces for a second grid.';
+                    }
+                } else {
+                    scoreEl2.innerHTML = `<h2 class="text-xl font-semibold text-gray-300 mt-4">Second Grid</h2>`;
+                    resultsSummary2.textContent = 'Not enough pieces for a second grid.';
+                }
+                progressContainer2.style.display = 'none';
+                progressText2.textContent = '';
+                document.getElementById('solve-second-grid-button').disabled = false;
+            };
+
+            scoreEl.textContent = 'Select an option and click Solve to begin.';
+            document.getElementById('grid1-layouts').innerHTML = '';
+            document.getElementById('grid2-layouts').innerHTML = '';
+
+            solveBtn.addEventListener('click', runSolver);
+            document.getElementById('solve-second-grid-button').addEventListener('click', runSecondGridSolver);
+
+            // Add shape size slider event listener
+            shapeSizeSlider.addEventListener('input', (e) => {
+                const size = e.target.value;
+                shapeSizeValue.textContent = `${size}px`;
+                updateShapePools();
+            });
+            
+            setupInitialData();
+        };
+    </script>
+</body>
+</html>
