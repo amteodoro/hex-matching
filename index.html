@@ -1476,6 +1476,49 @@
 
         const rarityValue = { 'mythic': 5, 'legendary': 4, 'epic': 3, 'rare': 2, 'common': 1, 'none': 0 };
 
+        // Max level restrictions by rarity
+        // Common: max level 1, Uncommon/Rare: max level 3, Epic: max level 5, Legendary/Mythic: max level 7
+        const rarityMaxLevel = {
+            'common': 1,
+            'rare': 3,      // Uncommon maps to rare
+            'epic': 5,
+            'legendary': 7,
+            'mythic': 7,
+            'none': 0
+        };
+
+        function getMaxLevelForRarity(rarity) {
+            return rarityMaxLevel[rarity.toLowerCase()] || 7;
+        }
+
+        function updateLevelDropdownForRarity(rarity) {
+            const levelSelect = document.getElementById('toyz-level');
+            const currentValue = parseInt(levelSelect.value) || 0;
+            const maxLevel = getMaxLevelForRarity(rarity);
+
+            // Clear existing options
+            levelSelect.innerHTML = '';
+
+            // Add options up to max level
+            for (let i = 0; i <= maxLevel; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                levelSelect.appendChild(option);
+            }
+
+            // Restore value if valid, otherwise set to max
+            levelSelect.value = Math.min(currentValue, maxLevel);
+
+            // Update buffs display after level change
+            if (typeof updateToyZBuffsDisplay === 'function') {
+                updateToyZBuffsDisplay();
+            }
+            if (typeof updateBuffInputFields === 'function') {
+                updateBuffInputFields();
+            }
+        }
+
         function calculateRarityScore(arrangement) {
             return Object.values(arrangement).reduce((sum, hex) => sum + (rarityValue[hex.rarity] || 0), 0);
         }
@@ -2155,6 +2198,9 @@
             const mappedElement = elementMapping[toyZ.element] || toyZ.element.toLowerCase();
             document.getElementById('new-hex-element').value = mappedElement;
             document.getElementById('new-hex-id').value = getNextId();
+
+            // Update level dropdown based on rarity restrictions
+            updateLevelDropdownForRarity(toyZ.rarity);
         }
 
 
@@ -2863,6 +2909,11 @@
                 if (document.getElementById('manual-entry').style.display !== 'none') {
                     setupManualBuffInputs();
                 }
+            });
+
+            // Rarity change listener to update level restrictions
+            document.getElementById('new-hex-rarity').addEventListener('change', (e) => {
+                updateLevelDropdownForRarity(e.target.value);
             });
 
 

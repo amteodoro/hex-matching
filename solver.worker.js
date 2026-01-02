@@ -218,7 +218,7 @@ function preprocessHexagons(hexagons) {
     return { uniqueHexagons, sidePatternGroups };
 }
 
-function expandArrangements(baseArrangements, sidePatternGroups) {
+function expandArrangements(baseArrangements, sidePatternGroups, optimizationGoal = 'matches') {
     if (!baseArrangements || baseArrangements.length === 0) return [];
 
     const allExpandedArrangements = [];
@@ -261,7 +261,16 @@ function expandArrangements(baseArrangements, sidePatternGroups) {
             if (!uniqueLayouts.has(layoutKey)) {
                 uniqueLayouts.add(layoutKey);
                 const { score, colorCounts, elementCounts, buffSummary } = calculateArrangementScore(combo);
-                allExpandedArrangements.push({ arrangement: combo, score, colorCounts, elementCounts, buffSummary });
+                const optimizationValue = calculateOptimizationValue(buffSummary, optimizationGoal, score);
+                allExpandedArrangements.push({
+                    arrangement: combo,
+                    score,
+                    matchCount: score,  // Match count is the raw score
+                    optimizationValue,
+                    colorCounts,
+                    elementCounts,
+                    buffSummary
+                });
             }
         });
     });
@@ -563,7 +572,7 @@ onmessage = async function (e) {
             );
 
             // Expand Arrangements
-            const expandedArrangements = expandArrangements(result.arrangements, sidePatternGroups);
+            const expandedArrangements = expandArrangements(result.arrangements, sidePatternGroups, optimizationGoal);
 
             // Apply Tie Breaking
             const finalSorted = applyTieBreaking(expandedArrangements, tiebreakMode, colorPriority || [], elementPriority || []);
